@@ -1,19 +1,20 @@
 <?php
 
-class Controller_Base extends Controller_Template {
-
+class Controller_Base extends Controller_Template
+{
 	public function before()
 	{
 		parent::before();
 
-		// Assign current_user to the instance so controllers can use it
-		if (Config::get('auth.driver', 'Simpleauth') == 'Ormauth')
+		$this->current_user = null;
+
+		foreach (\Auth::verified() as $driver)
 		{
-			$this->current_user = Auth::check() ? Model\Auth_User::find_by_username(Auth::get_screen_name()) : null;
-		}
-		else
-		{
-			$this->current_user = Auth::check() ? Model_User::find_by_username(Auth::get_screen_name()) : null;
+			if (($id = $driver->get_user_id()) !== false)
+			{
+				$this->current_user = Model\Auth_User::find($id[1]);
+			}
+			break;
 		}
 
 		// Set a global variable so views can use it

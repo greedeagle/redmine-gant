@@ -3,10 +3,10 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -14,7 +14,6 @@ namespace Fuel\Core;
 
 abstract class Controller
 {
-
 	/**
 	 * @var  Request  The current Request object
 	 */
@@ -28,7 +27,7 @@ abstract class Controller
 	/**
 	 * Sets the controller request object.
 	 *
-	 * @param   Request   The current request object
+	 * @param   \Request $request  The current request object
 	 */
 	public function __construct(\Request $request)
 	{
@@ -42,6 +41,8 @@ abstract class Controller
 
 	/**
 	 * This method gets called after the action is called
+	 * @param \Response|string $response
+	 * @return \Response
 	 */
 	public function after($response)
 	{
@@ -77,4 +78,3 @@ abstract class Controller
 		return $this->request->params();
 	}
 }
-

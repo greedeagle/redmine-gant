@@ -18,8 +18,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -52,9 +52,13 @@
 			<article>
 				<h4 class="method" id="method_query">query($sql, $type = null)</h4>
 				<p>
-					The <strong>query</strong> method returns a new Database_Query_Builder object. The exact
-					object depends on the type passed. If no type was passed, Fuel chooses DB::SELECT if the SQL query begins with 'SELECT', and it will return a
-					<a href="qb_select.html">Database_Query_Builder_Select</a> object.
+					The <strong>query</strong> method returns a new Database_Query object. A Database_Query object can be used to execute a SQL query, or to bind variables to the query.
+				</p>
+				<p>
+					The first parameter is a SQL string which can contain placeholders. See <a href="usage.html#binding">Query binding</a>.
+				</p>
+				<p>
+					The result of the execution depends on the second parameter.  If no type was passed, Fuel tries to detect the type automatically. For example, Fuel chooses DB::SELECT if the SQL query begins with 'SELECT', and the result of the execution will be fetched rows. Same is true for the SQL query begins with 'INSERT', 'UPDATE' or 'DELETE'. In each case, the result will be the same as when the query was done by <a href="qb.html">Query Builder</a>. See <a href="usage.html#inserting">Inserting</a>, <a href="usage.html#updating">Updating</a>, and <a href="usage.html#deleting">Deleting</a>.
 				</p>
 				<table class="method">
 					<tbody>
@@ -86,7 +90,7 @@
 						</tr>
 						<tr>
 							<th>Returns</th>
-							<td>Returns a Database_Query_Builder</a> object of the requested type.</td>
+							<td>Returns a Database_Query object of the requested type.</td>
 						</tr>
 						<tr>
 							<th>Example</th>
@@ -105,6 +109,63 @@ $query = DB::query('SELECT * FROM `users`');
 					DB::SELECT to make sure the result is returned correctly.
 				</p>
 			</article>
+
+			<article>
+				<h4 class="method" id="method_instance">instance()</h4>
+				<p>
+					The <strong>instance</strong> method returns an instance of Database_Connection. It allows you to directly access a database instance, for example
+					when you have a need to use multiple database connections at the same time.
+				</p>
+				<table class="method">
+					<tbody>
+						<tr>
+							<th>Static</th>
+							<td>Yes</td>
+						</tr>
+						<tr>
+							<th>Parameters</th>
+							<td>
+								<table class="parameters">
+									<tr>
+										<th>Param</th>
+										<th>Default</th>
+										<th class="description">Description</th>
+									</tr>
+									<tr>
+										<th><kbd>$db</kbd></th>
+										<td><em>null</em></td>
+										<td>The database connection name.</td>
+									</tr>
+								</table>
+							</td>
+						</tr>
+						<tr>
+							<th>Returns</th>
+							<td>an instance of Database_Connection.</td>
+						</tr>
+						<tr>
+							<th>Throws</th>
+							<td>FuelException, if the connection name passed is not defined in your database configuration.</td>
+						</tr>
+						<tr>
+							<th>Example</th>
+							<td>
+								<pre class="php"><code>// get the default connection
+$db = DB::instance();
+
+// get a named connection
+$db = DB::instance('backup');</code></pre>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</article>
+
+
+
+
+
+
 
 			<article>
 				<h4 class="method" id="method_last_query">last_query()</h4>
@@ -140,7 +201,7 @@ $query = DB::query('SELECT * FROM `users`');
 							<th>Example</th>
 							<td>
 								<pre class="php"><code>// execute a query
-$user = DB::select()->from('users')->where('id', 1);
+$user = DB::select()->from('users')->where('id', 1)->execute();
 
 echo DB::last_query();
 // SELECT * FROM `users` WHERE `id` = 1
@@ -1192,7 +1253,7 @@ DB::count_last_query();
 			</article>
 
 			<article>
-				<h4 class="method" id="method_rollback_transaction">rollback_transaction($db = null)</h4>
+				<h4 class="method" id="method_rollback_transaction">rollback_transaction($db = null, $rollback_all = true)</h4>
 				<p>The <strong>rollback_transaction</strong> method rolls back all pending transactional queries.</p>
 				<table class="method">
 					<tbody>
@@ -1213,6 +1274,11 @@ DB::count_last_query();
 										<th><kbd>$db</kbd></th>
 										<td><strong>null</strong></td>
 										<td class="description">The database connection.</td>
+									</tr>
+									<tr>
+										<th><kbd>$rollback_all</kbd></th>
+										<td><strong>true</strong></td>
+										<td class="description">The rollback mode:<br>true - rollback everything and close transaction;<br>false - rollback only current level.</td>
 									</tr>
 								</table>
 							</td>
@@ -1258,7 +1324,7 @@ catch (Exception $e)
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

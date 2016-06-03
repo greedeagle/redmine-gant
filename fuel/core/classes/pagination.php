@@ -3,15 +3,14 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
 namespace Fuel\Core;
-
 
 class Pagination
 {
@@ -41,8 +40,10 @@ class Pagination
 	/**
 	 * Static access to the default instance
 	 *
+	 * @param 	string	$name
+	 * @param 	array	$arguments
 	 * @return	mixed
-	 * @throws	BadMethodCallException if the request method does not exist
+	 * @throws	\BadMethodCallException if the request method does not exist
 	 */
 	public static function __callStatic($name, $arguments)
 	{
@@ -71,13 +72,15 @@ class Pagination
 	/**
 	 * forge a new pagination instance
 	 *
+	 * @param	string $name
+	 * @param	array $config
 	 * @return	\Pagination	a new pagination instance
 	 */
 	public static function forge($name = 'default', $config = array())
 	{
 		if ($exists = static::instance($name))
 		{
-			\Error::notice('Pagination with this name exists already, cannot be overwritten.');
+			\Errorhandler::notice('Pagination with this name exists already, cannot be overwritten.');
 			return $exists;
 		}
 
@@ -94,6 +97,7 @@ class Pagination
 	/**
 	 * retrieve an existing pagination instance
 	 *
+	 * @param	string $name
 	 * @return	\Pagination	a existing pagination instance
 	 */
 	public static function instance($name = null)
@@ -132,6 +136,7 @@ class Pagination
 		'show_first'              => false,
 		'show_last'               => false,
 		'pagination_url'          => null,
+		'link_offset'             => 0.5,
 	);
 
 	/**
@@ -171,7 +176,7 @@ class Pagination
 	protected $raw_results = array();
 
 	/**
-	 *
+	 * @param	array $config
 	 */
 	public function __construct($config = array())
 	{
@@ -196,6 +201,8 @@ class Pagination
 
 	/**
 	 * configuration value getter
+	 * @param	$name
+	 * @return	mixed
 	 */
 	public function __get($name)
 	{
@@ -219,9 +226,11 @@ class Pagination
 		}
 	}
 
-
 	/**
 	 * configuration value setter
+	 *
+	 * @param	$name
+	 * @param	mixed $value
 	 */
 	public function __set($name, $value = null)
 	{
@@ -234,6 +243,8 @@ class Pagination
 		}
 		else
 		{
+			$value = $this->_validate($name, $value);
+
 			if (array_key_exists($name, $this->config))
 			{
 				$this->config[$name] = $value;
@@ -259,6 +270,7 @@ class Pagination
 	/**
 	 * Creates the pagination markup
 	 *
+	 * @param	mixed $raw
 	 * @return	mixed	HTML Markup for page number links, or an array of raw pagination data
 	 */
 	public function render($raw = false)
@@ -295,13 +307,32 @@ class Pagination
 
 		$html = '';
 
-		// let's get the starting page number, this is determined using num_links
-		$start = (($this->config['calculated_page'] - $this->config['num_links']) > 0) ? $this->config['calculated_page'] - ($this->config['num_links'] - 1) : 1;
+		// calculate start- and end page numbers
+		$start = $this->config['calculated_page'] - floor($this->config['num_links'] * $this->config['link_offset']);
+		$end = $this->config['calculated_page'] + floor($this->config['num_links'] * ( 1 - $this->config['link_offset']));
 
-		// let's get the ending page number
-		$end = (($this->config['calculated_page'] + $this->config['num_links']) < $this->config['total_pages']) ? $this->config['calculated_page'] + $this->config['num_links'] : $this->config['total_pages'];
+		// adjust for the first few pages
+		if ($start < 1)
+		{
+			$end -= $start - 1;
+			$start = 1;
+		}
 
-		for($i = $start; $i <= $end; $i++)
+		// make sure we don't overshoot the current page due to rounding issues
+		if ($end < $this->config['calculated_page'])
+		{
+			$start++;
+			$end++;
+		}
+
+		// make sure we don't overshoot the total
+		if ($end > $this->config['total_pages'])
+		{
+			$start = max(1, $start - $end + $this->config['total_pages']);
+			$end = $this->config['total_pages'];
+		}
+
+		for($i = intval($start); $i <= intval($end); $i++)
 		{
 			if ($this->config['calculated_page'] == $i)
 			{
@@ -329,8 +360,7 @@ class Pagination
 	/**
 	 * Pagination "First" link
 	 *
-	 * @param	string $value optional text to display in the link
-	 *
+	 * @param	string	$marker optional text to display in the link
 	 * @return	string	Markup for the 'first' page number link
 	 */
 	public function first($marker = null)
@@ -367,8 +397,7 @@ class Pagination
 	/**
 	 * Pagination "Previous" link
 	 *
-	 * @param	string $value optional text to display in the link
-	 *
+	 * @param	string $marker	optional text to display in the link
 	 * @return	string	Markup for the 'previous' page number link
 	 */
 	public function previous($marker = null)
@@ -408,8 +437,7 @@ class Pagination
 	/**
 	 * Pagination "Next" link
 	 *
-	 * @param	string $value optional text to display in the link
-	 *
+	 * @param	string	$marker optional text to display in the link
 	 * @return	string	Markup for the 'next' page number link
 	 */
 	public function next($marker = null)
@@ -448,8 +476,7 @@ class Pagination
 	/**
 	 * Pagination "Last" link
 	 *
-	 * @param	string $value optional text to display in the link
-	 *
+	 * @param	string $marker optional text to display in the link
 	 * @return	string	Markup for the 'last' page number link
 	 */
 	public function last($marker = null)
@@ -488,9 +515,6 @@ class Pagination
 	 */
 	protected function _recalculate()
 	{
-		// calculate the number of pages
-		$this->config['total_pages'] = (int) ceil($this->config['total_items'] / $this->config['per_page']) ?: 1;
-
 		// get the current page number, either from the one set, or from the URI or the query string
 		if ($this->config['current_page'])
 		{
@@ -504,18 +528,25 @@ class Pagination
 			}
 			else
 			{
-				$this->config['calculated_page'] = (int) \Request::main()->uri->get_segment($this->config['uri_segment']);
+				$this->config['calculated_page'] = (int) \Request::main()->uri->get_segment($this->config['uri_segment'], 1);
 			}
 		}
 
-		// make sure the current page is within bounds
-		if ($this->config['calculated_page'] > $this->config['total_pages'])
+		// do we have the total number of items?
+		if ($this->config['total_items'] > 0)
 		{
-			$this->config['calculated_page'] = $this->config['total_pages'];
-		}
-		elseif ($this->config['calculated_page'] < 1)
-		{
-			$this->config['calculated_page'] = 1;
+			// calculate the number of pages
+			$this->config['total_pages'] = (int) ceil($this->config['total_items'] / $this->config['per_page']) ?: 1;
+
+			// make sure the current page is within bounds
+			if ($this->config['calculated_page'] > $this->config['total_pages'])
+			{
+				$this->config['calculated_page'] = $this->config['total_pages'];
+			}
+			elseif ($this->config['calculated_page'] < 1)
+			{
+				$this->config['calculated_page'] = 1;
+			}
 		}
 
 		// the current page must be zero based so that the offset for page 1 is 0.
@@ -554,6 +585,12 @@ class Pagination
 				$url['query'] = array();
 			}
 
+			// make sure we don't destroy any fragments
+			if (isset($url['fragment']))
+			{
+				$url['fragment'] = '#'.$url['fragment'];
+			}
+
 			// do we have a segment offset due to the base_url containing segments?
 			$seg_offset = parse_url(rtrim(\Uri::base(), '/'));
 			$seg_offset = empty($seg_offset['path']) ? 0 : count(explode('/', trim($seg_offset['path'], '/')));
@@ -581,7 +618,7 @@ class Pagination
 			}
 
 			// re-assemble the url
-			$query = empty($url['query']) ? '' : '?'.preg_replace('/%7Bpage%7D/', '{page}', http_build_query($url['query']));
+			$query = empty($url['query']) ? '' : '?'.preg_replace('/%7Bpage%7D/', '{page}', http_build_query($url['query'], '', '&amp;'));
 			unset($url['query']);
 			empty($url['scheme']) or $url['scheme'] .= '://';
 			empty($url['port']) or $url['host'] .= ':';
@@ -592,4 +629,79 @@ class Pagination
 		return str_replace('{page}', $page, $this->config['pagination_url']);
 	}
 
+	/**
+	 * Validate the input configuration
+	 *
+	 * @param	$name
+	 * @param	$value
+	 * @return	int|mixed
+	 */
+	protected function _validate($name, $value)
+	{
+ 		switch ($name)
+		{
+			case 'offset':
+			case 'total_items':
+				// make sure it's an integer
+				if ($value != intval($value))
+				{
+					$value = 0;
+				}
+				// and that it's within bounds
+				$value = max(0, $value);
+			break;
+
+			// integer or string
+			case 'uri_segment':
+				if (is_numeric($value))
+				{
+					// make sure it's an integer
+					if ($value != intval($value))
+					{
+						$value = 1;
+					}
+					// and that it's within bounds
+					$value = max(1, $value);
+				}
+			break;
+
+			// validate integer values
+			case 'current_page':
+			case 'per_page':
+			case 'limit':
+			case 'total_pages':
+			case 'num_links':
+				// make sure it's an integer
+				if ($value != intval($value))
+				{
+					$value = 1;
+				}
+				// and that it's within bounds
+				$value = max(1, $value);
+			break;
+
+			// validate booleans
+			case 'show_first':
+			case 'show_last':
+				if ( ! is_bool($value))
+				{
+					$value = (bool) $value;
+				}
+			break;
+
+			// validate the link offset, and adjust if needed
+			case 'link_offset':
+				// make sure we have a fraction between 0 and 1
+				if ($value > 1)
+				{
+					$value = $value / 100;
+				}
+
+				// and that it's within bounds
+				$value = max(0.01, min($value, 0.99));
+			break;
+		}
+
+		return $value;
+	}
 }

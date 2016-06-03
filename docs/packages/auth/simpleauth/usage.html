@@ -18,8 +18,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../../../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -57,12 +57,12 @@
 			</p>
 
 			<p>
-				The Simpleauth <kbd>group</kbd> driver stores it's group definitions in the simpleauth configuration file.	It provides the logic
+				The Simpleauth <kbd>group</kbd> driver stores its group definitions in the simpleauth configuration file.	It provides the logic
 				for checking if a user is a member of a group, and for retrieving group information, or the roles defined to to a group.
 			</p>
 
 			<p>
-				The Simpleauth <kbd>acl</kbd> driver is role driven, and stores it's acl definitions in the simpleauth configuration file.
+				The Simpleauth <kbd>acl</kbd> driver is role driven, and stores its acl definitions in the simpleauth configuration file.
 				It provides the logic for checking if a user has access to a named ACL.
 			</p>
 
@@ -196,7 +196,7 @@ if (Auth::login($name, $pass))
 						</tr>
 						<tr>
 							<th>Returns</th>
-							<td>boolean. returns <strong>true</strong> if the is a logged-in user, <strong>false</strong> otherwise.</td>
+							<td>boolean. returns <strong>true</strong> if a logged-in user is present, <strong>false</strong> otherwise.</td>
 						</tr>
 						<tr>
 							<th>Example</th>
@@ -482,8 +482,8 @@ Auth::update_user(
 						<tr>
 							<th>Example</th>
 							<td>
-								<pre class="php"><code>// reset the password for the current user
-Auth::change_password('thisismynewpassword','thisismysecretpassword');
+								<pre class="php"><code>// change the password for the current user
+Auth::change_password('mycurrentpassword','mynewpassword');
 </code></pre>
 							</td>
 						</tr>
@@ -1293,7 +1293,7 @@ if (\Input::method() == 'POST')
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

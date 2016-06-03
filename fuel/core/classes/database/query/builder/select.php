@@ -1,12 +1,14 @@
 <?php
 /**
- * Database query builder for SELECT statements.
+ * Part of the Fuel framework.
  *
- * @package    Fuel/Database
- * @category   Query
- * @author     Kohana Team
- * @copyright  (c) 2008-2009 Kohana Team
- * @license    http://kohanaphp.com/license
+ * @package    Fuel
+ * @version    1.8
+ * @author     Fuel Development Team
+ * @license    MIT License
+ * @copyright  2010 - 2016 Fuel Development Team
+ * @copyright  2008 - 2009 Kohana Team
+ * @link       http://fuelphp.com
  */
 
 namespace Fuel\Core;
@@ -19,7 +21,7 @@ class Database_Query_Builder_Select extends \Database_Query_Builder_Where
 	protected $_select = array();
 
 	/**
-	 * @var bool  $_distinct  wether to select distinct values
+	 * @var bool  $_distinct  whether to select distinct values
 	 */
 	protected $_distinct = false;
 
@@ -393,7 +395,7 @@ class Database_Query_Builder_Select extends \Database_Query_Builder_Where
 		if ( ! $db instanceof \Database_Connection)
 		{
 			// Get the database instance
-			$db = \Database_Connection::instance($db);
+			$db = $this->_connection ?: \Database_Connection::instance($db);
 		}
 
 		// Callback to quote identifiers

@@ -17,8 +17,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -252,13 +252,32 @@ Model_Article::find('all', array('select' =&gt; array(array('name' =&gt; false))
 Model_Article::query()-&gt;related(array('author', 'comments'));
 Model_Article::find('all', array('related' =&gt; array('author', 'comments')));
 
-// include conditions on the relation (only supported when chaining)
+//=============================
+// Include one or more conditions on a relation (only supported when chaining)
+//=============================
+
+// First method - using an array
+//----------------------------
+// one condition
 Model_Article::query()
     -&gt;related('author', array('where' =&gt; array(array('active', '=', 1))));
 
-// include multiple conditions on the relation
+// multiple conditions
 Model_Article::query()
     -&gt;related('author', array('where' =&gt; array(array('active', '=', 1), array('status', '=', 'X'))));
+
+// Second method - use dot notation
+//----------------------------
+// one condition
+Model_Article::query()
+	-&gt;related('author')
+	-&gt;where('author.active', 1);
+
+// multiple conditions
+Model_Article::query()
+	-&gt;related('author')
+	-&gt;where('author.active', 1);
+	-&gt;where('author.status', 1);
 </code></pre>
 								</td>
 							</tr>
@@ -384,13 +403,13 @@ Model_Article::query()
 // creates WHERE `author` = 16 AND (`date` &lt; 1348404127 OR `draft` = 1)
 </code></pre>
 					<p class="note">
-						To create a nested OR, use <kbd>or_where_open()</kbd> and <kbd>or_where_close()</kbd>. Allways make sure
+						To create a nested OR, use <kbd>or_where_open()</kbd> and <kbd>or_where_close()</kbd>. Always make sure
 						your open and close methods match!
 					</p>
 				</article>
 
                                 <article>
-                                    <h3 id="subqueries"><a class="internal_link" href="#/custom_sql">Subqueries</a></h3>
+                                    <h3 id="subqueries"><a class="internal_link" href="#/subqueries">Subqueries</a></h3>
                                     <p>Subqueries can be created by constructing a seperate query object and using get_query() to parse it.</p>
                                     <pre id="php"><code>$subQuery = Model_Article::query()
         -&gt;select('author')
@@ -405,7 +424,7 @@ Model_Article::query()
 
                                 <article>
                                     <h3 id="custom_sql"><a class="internal_link" href="#/custom_sql">Custom SQL</a></h3>
-                                    <p>It is also possible to perform custom SQL statements and have the result returned as an Orm model (or list of models). Although this is not part of the Orm itself it is useful to know. Take a look at the <a href="../../classes/database/db.html#/method_query">DB::query()</a> function for more information.</a></p>
+                                    <p>It is also possible to perform custom SQL statements and have the result returned as an Orm model (or list of models). Although this is not part of the Orm itself it is useful to know. Take a look at the <a href="../../classes/database/db.html#/method_query">DB::query()</a> function for more information.</p>
                                     <pre class="php"><code>DB::query('SELECT * FROM `articles` WHERE `id` = 1')-&gt;as_object('Model_Article')-&gt;execute();</code></pre>
                                     <p class="note">It is recommended that you use the <kbd>query()</kbd> function where ever possible though</p>
                                </article>
@@ -415,7 +434,7 @@ Model_Article::query()
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

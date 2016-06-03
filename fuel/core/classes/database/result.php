@@ -1,20 +1,20 @@
 <?php
 /**
- * Database result wrapper.
+ * Part of the Fuel framework.
  *
- * @package    Fuel/Database
- * @category   Query/Result
- * @author     Kohana Team
- * @copyright  (c) 2008-2009 Kohana Team
- * @license    http://kohanaphp.com/license
+ * @package    Fuel
+ * @version    1.8
+ * @author     Fuel Development Team
+ * @license    MIT License
+ * @copyright  2010 - 2016 Fuel Development Team
+ * @copyright  2008 - 2009 Kohana Team
+ * @link       http://fuelphp.com
  */
 
 namespace Fuel\Core;
 
-
-
-abstract class Database_Result implements \Countable, \Iterator, \SeekableIterator, \ArrayAccess {
-
+abstract class Database_Result implements \Countable, \Iterator, \SeekableIterator, \ArrayAccess, \Sanitization
+{
 	/**
 	 * @var  string Executed SQL for this result
 	 */
@@ -39,6 +39,11 @@ abstract class Database_Result implements \Countable, \Iterator, \SeekableIterat
 	 * @var  bool  $_as_object  return rows as an object or associative array
 	 */
 	protected $_as_object;
+
+	/**
+	 * @var  bool  $_sanitization_enabled  If this is a records data will be sanitized on get
+	 */
+	protected $_sanitization_enabled = false;
 
 	/**
 	 * Sets the total number of rows and stores the result locally.
@@ -97,8 +102,8 @@ abstract class Database_Result implements \Countable, \Iterator, \SeekableIterat
 	 *     // Associative array of rows, "id" => "name"
 	 *     $rows = $result->as_array('id', 'name');
 	 *
-	 * @param   string  column for associative keys
-	 * @param   string  column for values
+	 * @param   string $key   column for associative keys
+	 * @param   string $value column for values
 	 * @return  array
 	 */
 	public function as_array($key = null, $value = null)
@@ -196,14 +201,34 @@ abstract class Database_Result implements \Countable, \Iterator, \SeekableIterat
 		{
 			if (isset($row->$name))
 			{
-				return $row->$name;
+				// sanitize the data if needed
+				if ( ! $this->_sanitization_enabled)
+				{
+					$result = $row->$name;
+				}
+				else
+				{
+					$result = \Security::clean($row->$name, null, 'security.output_filter');
+				}
+
+				return $result;
 			}
 		}
 		else
 		{
 			if (isset($row[$name]))
 			{
-				return $row[$name];
+				// sanitize the data if needed
+				if ( ! $this->_sanitization_enabled)
+				{
+					$result = $row[$name];
+				}
+				else
+				{
+					$result = \Security::clean($row[$name], null, 'security.output_filter');
+				}
+
+				return $result;
 			}
 		}
 
@@ -255,7 +280,15 @@ abstract class Database_Result implements \Countable, \Iterator, \SeekableIterat
 			return null;
 		}
 
-		return $this->current();
+		$result = $this->current();
+
+		// sanitize the data if needed
+		if ($this->_sanitization_enabled)
+		{
+			$result = \Security::clean($result, null, 'security.output_filter');
+		}
+
+		return $result;
 	}
 
 	/**
@@ -348,4 +381,37 @@ abstract class Database_Result implements \Countable, \Iterator, \SeekableIterat
 		return $this->offsetExists($this->_current_row);
 	}
 
+	/**
+	 * Enable sanitization mode in the object
+	 *
+	 * @return  $this
+	 */
+	public function sanitize()
+	{
+		$this->_sanitization_enabled = true;
+
+		return $this;
+	}
+
+	/**
+	 * Disable sanitization mode in the object
+	 *
+	 * @return  $this
+	 */
+	public function unsanitize()
+	{
+		$this->_sanitization_enabled = false;
+
+		return $this;
+	}
+
+	/**
+	 * Returns the current sanitization state of the object
+	 *
+	 * @return  bool
+	 */
+	public function sanitized()
+	{
+		return $this->_sanitization_enabled;
+	}
 }

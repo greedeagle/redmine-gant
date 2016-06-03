@@ -5,10 +5,10 @@
  * Fuel is a fast, lightweight, community driven PHP5 framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -32,7 +32,7 @@ class Generate
 	private static $_default_constraints = array(
 		'varchar' => 255,
 		'char' => 255,
-		'int' => 11
+		'int' => 11,
 	);
 
 	public static function config($args)
@@ -97,7 +97,7 @@ CONF;
 		{
 			// strip the classes directory as we need the module root
 			// and construct the filename
-			$path = substr($path,0, -8).'config'.DS.$file.'.php';
+			$path = substr($path, 0, -8).'config'.DS.$file.'.php';
 			$path_name = "\\".ucfirst($module).'::';
 		}
 		elseif ( ! empty($module))
@@ -139,17 +139,33 @@ CONF;
 			throw new Exception('No controller name was provided.');
 		}
 
-		// Do we want a view or a viewmodel?
-		$with_viewmodel = \Cli::option('with-viewmodel');
+		// Do we want a view or a presenter?
+		$with_presenter = \Cli::option('with-presenter') or \Cli::option('with-viewmodel');
 
  		$actions = $args;
 
 		$filename = trim(str_replace(array('_', '-'), DS, $name), DS);
 
-		$filepath = APPPATH.'classes'.DS.'controller'.DS.$filename.'.php';
+		$base_path = APPPATH;
+
+		if ($module = \Cli::option('module'))
+		{
+			if ( ! ($base_path = \Module::exists($module)) )
+			{
+				throw new Exception('Module '.$module.' was not found within any of the defined module paths');
+			}
+		}
+
+		$filepath = $base_path.'classes'.DS.'controller'.DS.$filename.'.php';
 
 		// Uppercase each part of the class name and remove hyphens
 		$class_name = \Inflector::classify(str_replace(array('\\', '/'), '_', $name), false);
+
+		// Generate with test?
+		$with_test = \Cli::option('with-test');
+		if ($with_test) {
+			static::_create_test('Controller', $class_name, $base_path);
+		}
 
 		// Stick "blog" to the start of the array
 		array_unshift($args, $filename);
@@ -195,35 +211,39 @@ CONTROLLER;
 		// Write controller
 		static::create($filepath, $controller, 'controller');
 
-
-		// Do you want a viewmodel with that?
-		if ($with_viewmodel)
+		// Do you want a presenter with that?
+		if ($with_presenter)
 		{
-			$viewmodel_filepath = APPPATH.'classes'.DS.'view'.DS.$filename;
+			$presenter_filepath = $base_path.'classes'.DS.'presenter'.DS.$filename;
 
-			// One ViewModel per action
+			// One Presenter per action
 			foreach ($actions as $action)
 			{
-				$viewmodel = <<<VIEWMODEL
+				$presenter = <<<PRESENTER
 <?php
 
-class View_{$class_name}_{$action} extends Viewmodel
+class Presenter_{$class_name}_{$action} extends Presenter
 {
 	public function view()
 	{
 		\$this->content = "{$class_name} &raquo; {$action}";
 	}
 }
-VIEWMODEL;
+PRESENTER;
 
-				// Write viewmodel
-				static::create($viewmodel_filepath.DS.$action.'.php', $viewmodel, 'viewmodel');
+				// Write presenter
+				static::create($presenter_filepath.DS.$action.'.php', $presenter, 'presenter');
 			}
+		}
+
+		// Generate with test?
+		$with_test = \Cli::option('with-test');
+		if ($with_presenter and $with_test) {
+			static::_create_test('Presenter', $class_name, $base_path);
 		}
 
 		$build and static::build();
 	}
-
 
 	public static function model($args, $build = true)
 	{
@@ -242,8 +262,19 @@ VIEWMODEL;
 		$plural = \Cli::option('singular') ? $singular : \Inflector::pluralize($singular);
 
 		$filename = trim(str_replace(array('_', '-'), DS, $singular), DS);
+		$base_path = APPPATH;
 
-		$filepath = APPPATH.'classes'.DS.'model'.DS.$filename.'.php';
+		if ($module = \Cli::option('module'))
+		{
+			if ( ! ($base_path = \Module::exists($module)) )
+			{
+				throw new Exception('Module '.$module.' was not found within any of the defined module paths');
+			}
+
+			$module_namespace = ucwords($module);
+		}
+
+		$filepath = $base_path.'classes'.DS.'model'.DS.$filename.'.php';
 
 		// Uppercase each part of the class name and remove hyphens
 		$class_name = \Inflector::classify(str_replace(array('\\', '/'), '_', $singular), false);
@@ -259,13 +290,22 @@ VIEWMODEL;
 
 		}, $args));
 
-		// Make sure an id is present
-		strpos($properties, "'id'") === false and $properties = "'id',\n\t\t".$properties.',';
+		// Add a comma to the end of the list
+		$properties = "\n\t\t" . $properties . ",";
 
 		$contents = '';
 
+		// Generate with test?
+		$with_test = \Cli::option('with-test');
+		if ($with_test) {
+			static::_create_test('Model', $class_name, $base_path);
+		}
+
 		if (\Cli::option('crud'))
 		{
+			// Make sure an id is present
+			strpos($properties, "'id'") === false and $properties = "'id',".$properties;
+
 			if ( ! \Cli::option('no-properties'))
 			{
 				$contents = <<<CONTENTS
@@ -312,7 +352,21 @@ CONTENTS;
 	protected static \$_table_name = '{$plural}';
 
 CONTENTS;
-			$model = <<<MODEL
+			if ($module)
+			{
+				$model = <<<MODEL
+<?php namespace {$module_namespace};
+
+class Model_{$class_name} extends \Model_Crud
+{
+{$contents}
+}
+
+MODEL;
+			}
+			else
+			{
+				$model = <<<MODEL
 <?php
 
 class Model_{$class_name} extends \Model_Crud
@@ -321,10 +375,73 @@ class Model_{$class_name} extends \Model_Crud
 }
 
 MODEL;
+			}
 		}
 		else
 		{
-			if ( ! \Cli::option('no-timestamp'))
+			$time_type = (\Cli::option('mysql-timestamp')) ? 'timestamp' : 'int';
+			$no_timestamp_default = false;
+
+			if ( \Cli::option('soft-delete'))
+			{
+				$deleted_at = \Cli::option('deleted-at', 'deleted_at');
+				is_string($deleted_at) or $deleted_at = 'deleted_at';
+				$properties .= "\n\t\t'".$deleted_at."',";
+
+				$args = array_merge($args, array($deleted_at.':'.$time_type.':null[1]'));
+			}
+			elseif (\Cli::option('temporal'))
+			{
+				$temporal_end = \Cli::option('temporal-end', 'temporal_end');
+				is_string($temporal_end) or $temporal_end = 'temporal_end';
+				$properties = "\n\t\t'".$temporal_end."'," . $properties;
+
+				$args = array_merge(array($temporal_end.':'.$time_type), $args);
+
+				$temporal_start = \Cli::option('temporal-start', 'temporal_start');
+				is_string($temporal_start) or $temporal_start = 'temporal_start';
+				$properties = "\n\t\t'".$temporal_start."'," . $properties;
+
+				$args = array_merge(array($temporal_start.':'.$time_type), $args);
+				$no_timestamp_default = true;
+			}
+			elseif (\Cli::option('nestedset'))
+			{
+				$title = \Cli::option('title', false);
+
+				if ($title)
+				{
+					is_string($title) or $title = 'title';
+					$properties = "\n\t\t'".$title."'," . $properties;
+
+					$args = array_merge(array($title.':varchar[50]'), $args);
+				}
+
+				$tree_id = \Cli::option('tree-id', false);
+
+				if ($tree_id)
+				{
+					is_string($tree_id) or $tree_id = 'tree_id';
+					$properties = "\n\t\t'".$tree_id."'," . $properties;
+
+					$args = array_merge(array($tree_id.':int:unsigned'), $args);
+				}
+
+				$right_id = \Cli::option('right-id', 'right_id');
+				is_string($right_id) or $right_id = 'right_id';
+				$properties = "\n\t\t'".$right_id."'," . $properties;
+
+				$args = array_merge(array($right_id.':int:unsigned'), $args);
+
+				$left_id = \Cli::option('left-id', 'left_id');
+				is_string($left_id) or $left_id = 'left_id';
+				$properties = "\n\t\t'".$left_id."'," . $properties;
+
+				$args = array_merge(array($left_id.':int:unsigned'), $args);
+				$no_timestamp_default = true;
+			}
+
+			if ( ! \Cli::option('no-timestamp', $no_timestamp_default))
 			{
 				$created_at = \Cli::option('created-at', 'created_at');
 				is_string($created_at) or $created_at = 'created_at';
@@ -334,21 +451,13 @@ MODEL;
 				is_string($updated_at) or $updated_at = 'updated_at';
 				$properties .= "\n\t\t'".$updated_at."',";
 
-				$time_type = (\Cli::option('mysql-timestamp')) ? 'timestamp' : 'int';
-
 				$timestamp_properties = array($created_at.':'.$time_type.':null[1]', $updated_at.':'.$time_type.':null[1]');
-
-				if ( \Cli::option('soft-delete'))
-				{
-					$deleted_at = \Cli::option('deleted-at', 'deleted_at');
-					is_string($deleted_at) or $deleted_at = 'deleted_at';
-					$properties .= "\n\t\t'".$deleted_at."',";
-
-					$timestamp_properties = array_merge($timestamp_properties, array($deleted_at.':'.$time_type.':null[1]'));
-				}
 
 				$args = array_merge($args, $timestamp_properties);
 			}
+
+			// Make sure an id is present
+			strpos($properties, "'id'") === false and $properties = "'id',".$properties;
 
 			if ( ! \Cli::option('no-properties'))
 			{
@@ -360,9 +469,10 @@ MODEL;
 CONTENTS;
 			}
 
-			if ( ! \Cli::option('no-timestamp'))
+			$mysql_timestamp = (\Cli::option('mysql-timestamp')) ? 'true' : 'false';
+
+			if ( ! \Cli::option('no-timestamp', $no_timestamp_default))
 			{
-				$mysql_timestamp = (\Cli::option('mysql-timestamp')) ? 'true' : 'false';
 
 				if(($created_at = \Cli::option('created-at')) and is_string($created_at))
 				{
@@ -402,33 +512,144 @@ CONTENTS;
 	);
 CONTENTS;
 
-				if ( \Cli::option('soft-delete'))
+			}
+
+			if (\Cli::option('soft-delete'))
+			{
+				if($deleted_at !== 'deleted_at')
 				{
-					if(($deleted_at = \Cli::option('deleted-at')) and is_string($updated_at))
-					{
-						$deleted_at = <<<CONTENTS
+					$deleted_at = <<<CONTENTS
 
 		'deleted_field' => '{$deleted_at}',
 CONTENTS;
-					}
-					else
-					{
-						$deleted_at = '';
-					}
+				}
+				else
+				{
+					$deleted_at = '';
+				}
 
-					$contents .= <<<CONTENTS
+				$contents .= <<<CONTENTS
 
 
 	protected static \$_soft_delete = array(
 		'mysql_timestamp' => $mysql_timestamp,$deleted_at
 	);
 CONTENTS;
+			}
+			elseif (\Cli::option('temporal'))
+			{
+				if($temporal_start !== 'temporal_start')
+				{
+					$start_column = <<<CONTENTS
 
+		'start_column' => '{$temporal_start}',
+CONTENTS;
+				}
+				else
+				{
+					$start_column = '';
+				}
+
+				if($temporal_end !== 'temporal_end')
+				{
+					$end_column = <<<CONTENTS
+
+		'end_column' => '{$temporal_end}',
+CONTENTS;
+				}
+				else
+				{
+					$end_column = '';
+				}
+
+				$contents .= <<<CONTENTS
+
+
+	protected static \$_temporal = array(
+		'mysql_timestamp' => $mysql_timestamp,$start_column$end_column
+	);
+
+	protected static \$_primary_key = array('id', '{$temporal_start}', '{$temporal_end}');
+CONTENTS;
+			}
+			elseif (\Cli::option('nestedset'))
+			{
+				if($left_id !== 'left_id')
+				{
+					$left_field = <<<CONTENTS
+		'left_field' => '{$left_id}',
+CONTENTS;
+				}
+				else
+				{
+					$left_field = '';
+				}
+
+				if($right_id !== 'right_id')
+				{
+					$right_field = <<<CONTENTS
+		'right_field' => '{$right_id}',
+CONTENTS;
+				}
+				else
+				{
+					$right_field = '';
+				}
+
+				if($tree_id)
+				{
+					$tree_field = <<<CONTENTS
+		'tree_field' => '{$tree_id}',
+CONTENTS;
+				}
+				else
+				{
+					$tree_field = '';
+				}
+
+				if($title)
+				{
+					$title_field = <<<CONTENTS
+		'title_field' => '{$title}',
+CONTENTS;
+				}
+				else
+				{
+					$title_field = '';
+				}
+
+				if($read_only = \Cli::option('read-only') and is_string($read_only))
+				{
+					$read_only = explode(',', $read_only);
+					$read_only = "'" . implode("', '", $read_only) . "'";
+					$read_only = <<<CONTENTS
+		'read_only' => array($read_only),
+CONTENTS;
+				}
+				else
+				{
+					$read_only = '';
+				}
+
+				if (! empty($left_field) or ! empty($right_field) or ! empty($tree_field) or ! empty($title_field))
+				{
+					$fields = array($left_field, $right_field, $tree_field, $title_field, $read_only);
+					$fields = array_filter($fields);
+					$fields = implode("\n", $fields);
+
+					$contents .= <<<CONTENTS
+
+
+	protected static \$_tree = array(
+$fields
+	);
+CONTENTS;
 				}
 
 			}
 
 			$contents .= <<<CONTENTS
+
 
 	protected static \$_table_name = '{$plural}';
 
@@ -437,7 +658,21 @@ CONTENTS;
 			$model = '';
 			if ( \Cli::option('soft-delete'))
 			{
-				$model .= <<<MODEL
+				if ($module)
+				{
+					$model .= <<<MODEL
+<?php namespace {$module_namespace};
+
+class Model_{$class_name} extends \Orm\Model_Soft
+{
+{$contents}
+}
+
+MODEL;
+				}
+				else
+				{
+					$model .= <<<MODEL
 <?php
 
 class Model_{$class_name} extends \Orm\Model_Soft
@@ -446,10 +681,49 @@ class Model_{$class_name} extends \Orm\Model_Soft
 }
 
 MODEL;
+				}
+			}
+			elseif ( \Cli::option('temporal'))
+			{
+				$model .= <<<MODEL
+<?php
+
+class Model_{$class_name} extends \Orm\Model_Temporal
+{
+{$contents}
+}
+
+MODEL;
+			}
+			elseif ( \Cli::option('nestedset'))
+			{
+				$model .= <<<MODEL
+<?php
+
+class Model_{$class_name} extends \Orm\Model_Nestedset
+{
+{$contents}
+}
+
+MODEL;
 			}
 			else
 			{
-				$model .= <<<MODEL
+				if ($module)
+				{
+					$model .= <<<MODEL
+<?php namespace {$module_namespace};
+
+class Model_{$class_name} extends \Orm\Model
+{
+{$contents}
+}
+
+MODEL;
+				}
+				else
+				{
+					$model .= <<<MODEL
 <?php
 
 class Model_{$class_name} extends \Orm\Model
@@ -458,6 +732,7 @@ class Model_{$class_name} extends \Orm\Model
 }
 
 MODEL;
+				}
 			}
 		}
 
@@ -481,21 +756,79 @@ MODEL;
 		$build and static::build();
 	}
 
+	public static function module($args)
+	{
+		if ( ! ($module_name = strtolower(array_shift($args)) ) )
+		{
+			throw new Exception('No module name has been provided.');
+		}
+
+		if ($path = \Module::exists($module_name))
+		{
+			throw new Exception('A module named '.$module_name.' already exists at '.$path);
+		}
+
+		$module_paths = \Config::get('module_paths');
+		$base = reset($module_paths);
+
+		if (count($module_paths) > 1)
+		{
+			\Cli::write('Your app has multiple module paths defined. Please choose the appropriate path from the list below', 'yellow', 'blue');
+
+			$options = array();
+			foreach ($module_paths as $key => $path)
+			{
+				$idx = $key+1;
+				\Cli::write('['.$idx.'] '.$path);
+				$options[] = $idx;
+			}
+
+			$path_idx = \Cli::prompt('Please choose the desired module path', $options);
+
+			$base = $module_paths[$path_idx - 1];
+		}
+
+		$module_path = $base.$module_name.DS;
+
+		static::$create_folders[] = $module_path;
+		static::$create_folders[] = $module_path.'classes/';
+
+		if ( ($folders = \Cli::option('folders')) !== true )
+		{
+			$folders = explode(',', $folders);
+
+			foreach ($folders as $folder)
+			{
+				static::$create_folders[] = $module_path.$folder;
+			}
+		}
+
+		static::$create_folders && static::build();
+	}
 
 	public static function views($args, $subfolder, $build = true)
 	{
 		$controller = strtolower(array_shift($args));
 		$controller_title = \Inflector::humanize($controller);
 
-		$view_dir = APPPATH.'views/'.trim(str_replace(array('_', '-'), DS, $controller), DS).DS;
+		$base_path = APPPATH;
+		if ($module = \Cli::option('module'))
+		{
+			if ( ! ($base_path = \Module::exists($module)) )
+			{
+				throw new Exception('Module '.$module.' was not found within any of the defined module paths');
+			}
+		}
+
+		$view_dir = $base_path.'views/'.trim(str_replace(array('_', '-'), DS, $controller), DS).DS;
 
 		$args or $args = array('index');
 
 		// Make the directory for these views to be store in
 		is_dir($view_dir) or static::$create_folders[] = $view_dir;
 
-		// Add the default template if it doesnt exist
-		if ( ! is_file($app_template = APPPATH.'views/template.php'))
+		// Add the default template if it doesn't exist
+		if ( ! is_file($app_template = $base_path.'views/template.php') )
 		{
 			static::create($app_template, file_get_contents(\Package::exists('oil').'views/scaffolding/template.php'), 'view');
 		}
@@ -508,7 +841,7 @@ MODEL;
 
 		foreach ($args as $action)
 		{
-			$view_title = \Cli::option('with-viewmodel') ? '<?php echo $content; ?>' : \Inflector::humanize($action);
+			$view_title = (\Cli::option('with-presenter') or \Cli::option('with-viewmodel')) ? '<?php echo $content; ?>' : \Inflector::humanize($action);
 
 			$view = <<<VIEW
 <ul class="nav nav-pills">
@@ -517,13 +850,18 @@ MODEL;
 <p>{$view_title}</p>
 VIEW;
 
+			// Generate with test?
+ 			$with_test = \Cli::option('with-test');
+            		if ($with_test) {
+               			static::_create_test('View', $controller, $base_path, $nav_item);
+			}
+
 			// Create this view
 			static::create($view_dir.$action.'.php', $view, 'view');
 		}
 
 		$build and static::build();
 	}
-
 
 	public static function migration($args, $build = true)
 	{
@@ -535,13 +873,36 @@ VIEW;
 			throw new Exception("Command is invalid.".PHP_EOL."\tphp oil g migration <migrationname> [<fieldname1>:<type1> |<fieldname2>:<type2> |..]");
 		}
 
+		$base_path = APPPATH;
+
 		// Check if a migration with this name already exists
-		$migrations = new \GlobIterator(APPPATH."migrations/*_{$migration_name}*");
+		if ($module = \Cli::option('module'))
+		{
+			if ( ! ($base_path = \Module::exists($module)) )
+			{
+				throw new Exception('Module '.$module.' was not found within any of the defined module paths');
+			}
+		}
+
+		$migrations = new \GlobIterator($base_path.'migrations/*_'.$migration_name.'*');
+
 		try
 		{
 			$duplicates = array();
 			foreach($migrations as $migration)
 			{
+				// check if it's really a duplicate
+				$part = explode('_', basename($migration->getFilename(), '.php'), 2);
+				if ($part[1] != $migration_name)
+				{
+					$part = substr($part[1], strlen($migration_name)+1);
+					if ( ! is_numeric($part))
+					{
+						// not a numbered suffix, but the same base classname
+						continue;
+					}
+				}
+
 				$duplicates[] = $migration->getPathname();
 			}
 		}
@@ -609,46 +970,47 @@ VIEW;
 				}
 
 				// add_{field}_to_{table}
-				else if (count($matches) == 3 && $matches[1] == 'to')
+				elseif (count($matches) == 3 && $matches[1] == 'to')
 				{
 					$subjects = array($matches[0], $matches[2]);
 				}
 
 				// delete_{field}_from_{table}
-				else if (count($matches) == 3 && $matches[1] == 'from')
+				elseif (count($matches) == 3 && $matches[1] == 'from')
 				{
 					$subjects = array($matches[0], $matches[2]);
 				}
 
 				// rename_field_{field}_to_{field}_in_{table} (with underscores in field names)
-				else if (count($matches) >= 5 && in_array('to', $matches) && in_array('in', $matches))
+				elseif (count($matches) >= 5 && in_array('to', $matches) && in_array('in', $matches))
 				{
 					$subjects = array(
 					 implode('_', array_slice($matches, array_search('in', $matches)+1)),
 					 implode('_', array_slice($matches, 0, array_search('to', $matches))),
-					 implode('_', array_slice($matches, array_search('to', $matches)+1, array_search('in', $matches)-array_search('to', $matches)-1))
+					 implode('_', array_slice($matches, array_search('to', $matches)+1, array_search('in', $matches)-array_search('to', $matches)-1)),
 				  );
 				}
 
 				// rename_table
-				else if ($method_name == 'rename_table')
+				elseif ($method_name == 'rename_table')
 				{
 					$subjects = array(
 					 implode('_', array_slice($matches, 0, array_search('to', $matches))),
-					 implode('_', array_slice($matches, array_search('to', $matches)+1))
+					 implode('_', array_slice($matches, array_search('to', $matches)+1)),
 				  );
 				}
 
 				// create_{table} or drop_{table} (with underscores in table name)
-				else if (count($matches) !== 0)
+				elseif (count($matches) !== 0)
 				{
-					$name = str_replace(array('create_', 'add_', '_to_'), array('create-', 'add-', '-to-'), $migration_name);
+					$name = str_replace(array('create_', 'add_', 'drop_', '_to_'), array('create-', 'add-', 'drop-', '-to-'), $migration_name);
 
-    				if (preg_match('/^(create|add)\-([a-z0-9\_]*)(\-to\-)?([a-z0-9\_]*)?$/i', $name, $deep_matches))
+    				if (preg_match('/^(create|drop|add)\-([a-z0-9\_]*)(\-to\-)?([a-z0-9\_]*)?$/i', $name, $deep_matches))
     				{
     					switch ($deep_matches[1])
     					{
     						case 'create' :
+    						case 'drop' :
     							$subjects = array(false, $deep_matches[2]);
     						break;
 
@@ -701,7 +1063,7 @@ VIEW;
 								{
 									$type = 'varchar';
 								}
-								else if ($type === 'integer')
+								elseif ($type === 'integer')
 								{
 									$type = 'int';
 								}
@@ -813,14 +1175,12 @@ class {$migration_name}
 MIGRATION;
 
 		$number = isset($number) ? $number : static::_find_migration_number();
-		$filepath = APPPATH . 'migrations/'.$number.'_' . strtolower($migration_name) . '.php';
+		$filepath = $base_path.'migrations/'.$number.'_'.strtolower($migration_name).'.php';
 
 		static::create($filepath, $migration, 'migration');
 
 		$build and static::build();
 	}
-
-
 
 	public static function task($args, $build = true)
 	{
@@ -839,9 +1199,19 @@ MIGRATION;
 
 		// Uppercase each part of the class name and remove hyphens
 		$class_name = \Inflector::classify($name, false);
-
 		$filename = trim(str_replace(array('_', '-'), DS, $name), DS);
-		$filepath = APPPATH.'tasks'.DS.$filename.'.php';
+
+		$base_path = APPPATH;
+
+		if ($module = \Cli::option('module'))
+		{
+			if ( ! ($base_path = \Module::exists($module)) )
+			{
+				throw new Exception('Module '.$module.' was not found within any of the defined module paths');
+			}
+		}
+
+		$filepath = $base_path.'tasks'.DS.$filename.'.php';
 
 		$action_str = '';
 
@@ -925,7 +1295,6 @@ CONTROLLER;
 		$build and static::build();
 	}
 
-
 	public static function help()
 	{
 		$output = <<<HELP
@@ -962,7 +1331,6 @@ HELP;
 
 		\Cli::write($output);
 	}
-
 
 	public static function package($args, $build = true)
 	{
@@ -1121,7 +1489,6 @@ class {$class_name}
 CLASS;
 
 			static::create($path . 'classes' . DS . $name . '.php', $output);
-
 
 			$output = <<<DRIVER
 <?php
@@ -1320,7 +1687,6 @@ CLASS;
 		$build and static::build();
 	}
 
-
 	public static function create($filepath, $contents, $type = 'file')
 	{
 		$directory = dirname($filepath);
@@ -1347,10 +1713,9 @@ CLASS;
 		static::$create_files[] = array(
 			'path' => $filepath,
 			'contents' => $contents,
-			'type' => $type
+			'type' => $type,
 		);
 	}
-
 
 	public static function build()
 	{
@@ -1358,6 +1723,8 @@ CLASS;
 		{
 			is_dir($folder) or mkdir($folder, 0755, TRUE);
 		}
+
+		$result = true;
 
 		foreach (static::$create_files as $file)
 		{
@@ -1393,7 +1760,18 @@ CLASS;
 
 	private static function _find_migration_number()
 	{
-		$files = new \GlobIterator(APPPATH .'migrations/*_*.php');
+		$base_path = APPPATH;
+
+		if ($module = \Cli::option('module'))
+		{
+			if ( ! ($base_path = \Module::exists($module)) )
+			{
+				throw new Exception('Module ' . $module . ' was not found within any of the defined module paths');
+			}
+		}
+
+		$files = new \GlobIterator($base_path .'migrations/*_*.php');
+
 		try
 		{
 			$migrations = array();
@@ -1431,6 +1809,25 @@ CLASS;
 		$contents = preg_replace("#('version'[ \t]+=>)[ \t]+([0-9]+),#i", "$1 $version,", $contents);
 
 		static::create($app_path, $contents, 'config');
+	}
+
+	private static function _create_test($type, $class_name, $base_path, $nav_item = '')
+	{
+		$filepath = $base_path.strtolower('tests'.DS.$type.DS.ucwords($class_name));
+		if ( ! empty($nav_item) and $type === 'View')
+		{
+			$filepath = $filepath.DS.strtolower($nav_item);
+			$class_name = $class_name.'_'.ucwords($nav_item);
+		}
+		$output = <<<TEST
+<?php
+
+class Test_{$type}_{$class_name} extends TestCase
+{
+}
+TEST;
+
+		static::create($filepath.'.php', $output, 'test');
 	}
 }
 

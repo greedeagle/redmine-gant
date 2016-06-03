@@ -3,12 +3,18 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
+
+// load PHP 5.6+ specific code
+if (PHP_VERSION_ID >= 50600)
+{
+	include "base56.php";
+}
 
 /**
  * Loads in a core class and optionally an app class override if it exists.
@@ -22,8 +28,12 @@ if ( ! function_exists('import'))
 	function import($path, $folder = 'classes')
 	{
 		$path = str_replace('/', DIRECTORY_SEPARATOR, $path);
-		require_once COREPATH.$folder.DIRECTORY_SEPARATOR.$path.'.php';
-
+		// load it ffrom the core if it exists
+		if (is_file(COREPATH.$folder.DIRECTORY_SEPARATOR.$path.'.php'))
+		{
+			require_once COREPATH.$folder.DIRECTORY_SEPARATOR.$path.'.php';
+		}
+		// if the app has an override (or a non-core file), load that too
 		if (is_file(APPPATH.$folder.DIRECTORY_SEPARATOR.$path.'.php'))
 		{
 			require_once APPPATH.$folder.DIRECTORY_SEPARATOR.$path.'.php';
@@ -99,7 +109,6 @@ if ( ! function_exists('logger'))
 	}
 }
 
-
 /**
  * Takes an array of attributes and turns it into a string for an html tag
  *
@@ -126,7 +135,7 @@ if ( ! function_exists('array_to_attr'))
 				$property = $value;
 			}
 
-			$attr_str .= $property.'="'.$value.'" ';
+			$attr_str .= $property.'="'.str_replace('"', '&quot;', $value).'" ';
 		}
 
 		// We strip off the last space for return
@@ -146,12 +155,31 @@ if ( ! function_exists('html_tag'))
 {
 	function html_tag($tag, $attr = array(), $content = false)
 	{
-		$has_content = (bool) ($content !== false and $content !== null);
-		$html = '<'.$tag;
+		// list of void elements (tags that can not have content)
+		static $void_elements = array(
+			// html4
+			"area","base","br","col","hr","img","input","link","meta","param",
+			// html5
+			"command","embed","keygen","source","track","wbr",
+			// html5.1
+			"menuitem",
+		);
 
+		// construct the HTML
+		$html = '<'.$tag;
 		$html .= ( ! empty($attr)) ? ' '.(is_array($attr) ? array_to_attr($attr) : $attr) : '';
-		$html .= $has_content ? '>' : ' />';
-		$html .= $has_content ? $content.'</'.$tag.'>' : '';
+
+		// a void element?
+		if (in_array(strtolower($tag), $void_elements))
+		{
+			// these can not have content
+			$html .= ' />';
+		}
+		else
+		{
+			// add the content and close the tag
+			$html .= '>'.$content.'</'.$tag.'>';
+		}
 
 		return $html;
 	}
@@ -227,7 +255,7 @@ if ( ! function_exists('e'))
 {
 	function e($string)
 	{
-		return Security::htmlentities($string);
+		return \Security::htmlentities($string);
 	}
 }
 
@@ -295,7 +323,7 @@ if (!function_exists('http_build_url'))
 			$flags |= HTTP_URL_STRIP_FRAGMENT;
 		}
 		// HTTP_URL_STRIP_AUTH becomes HTTP_URL_STRIP_USER and HTTP_URL_STRIP_PASS
-		else if ($flags & HTTP_URL_STRIP_AUTH)
+		elseif ($flags & HTTP_URL_STRIP_AUTH)
 		{
 			$flags |= HTTP_URL_STRIP_USER;
 			$flags |= HTTP_URL_STRIP_PASS;
@@ -353,10 +381,9 @@ if (!function_exists('http_build_url'))
 		// note: scheme and host are never stripped
 		foreach ($keys as $key)
 		{
-			if ($flags & (int)constant('HTTP_URL_STRIP_' . strtoupper($key)))
+			if ($flags & (int) constant('HTTP_URL_STRIP_' . strtoupper($key)))
 				unset($parse_url[$key]);
 		}
-
 
 		$new_url = $parse_url;
 
@@ -408,7 +435,7 @@ if ( ! function_exists('get_common_path'))
  */
 if ( ! function_exists('call_fuel_func_array'))
 {
-	function call_fuel_func_array($callback , array $args)
+	function call_fuel_func_array($callback, array $args)
 	{
 		// deal with "class::method" syntax
 		if (is_string($callback) and strpos($callback, '::') !== false)
@@ -419,10 +446,16 @@ if ( ! function_exists('call_fuel_func_array'))
 		// if an array is passed, extract the object and method to call
 		if (is_array($callback) and isset($callback[1]) and is_object($callback[0]))
 		{
+			// make sure our arguments array is indexed
+			if ($count = count($args))
+			{
+				$args = array_values($args);
+			}
+
 			list($instance, $method) = $callback;
 
 			// calling the method directly is faster then call_user_func_array() !
-			switch (count($args))
+			switch ($count)
 			{
 				case 0:
 					return $instance->$method();
@@ -493,5 +526,47 @@ if ( ! function_exists('call_fuel_func_array'))
 
 		// fallback, handle the old way
 		return call_user_func_array($callback, $args);
+	}
+}
+
+/**
+ * hash_pbkdf2() implementation for PHP < 5.5.0
+ */
+if ( ! function_exists('hash_pbkdf2'))
+{
+    /* PBKDF2 Implementation (described in RFC 2898)
+     *
+     *  @param string a   hash algorithm to use
+     *  @param string p   password
+     *  @param string s   salt
+     *  @param int    c   iteration count (use 1000 or higher)
+     *  @param int    kl  derived key length
+     *  @param bool   r   when set to TRUE, outputs raw binary data. FALSE outputs lowercase hexits.
+     *
+     *  @return string derived key
+     */
+    function hash_pbkdf2($a, $p, $s, $c, $kl = 0, $r = false)
+    {
+        $hl = strlen(hash($a, null, true)); # Hash length
+        $kb = ceil($kl / $hl);              # Key blocks to compute
+        $dk = '';                           # Derived key
+
+        # Create key
+        for ( $block = 1; $block <= $kb; $block ++ )
+        {
+            # Initial hash for this block
+            $ib = $b = hash_hmac($a, $s . pack('N', $block), $p, true);
+
+            # Perform block iterations
+            for ( $i = 1; $i < $c; $i ++ )
+            {
+                # XOR each iterate
+                $ib ^= ($b = hash_hmac($a, $b, $p, true));
+            }
+            $dk .= $ib; # Append iterated block
+        }
+
+        # Return derived key of correct length
+		return substr($r ? $dk : bin2hex($dk), 0, $kl);
 	}
 }

@@ -5,14 +5,16 @@
  * Fuel is a fast, lightweight, community driven PHP5 framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
 namespace Auth;
+
+require_once __DIR__.'/../../normalizedrivertypes.php';
 
 class Auth_Opauth
 {
@@ -20,6 +22,11 @@ class Auth_Opauth
 	 * @var  string  name of the providers table
 	 */
 	protected static $provider_table = null;
+
+	/**
+	 * @var  string  name of the database connection to use
+	 */
+	protected static $db_connection = null;
 
 	/**
 	 * Class initialisation
@@ -36,15 +43,16 @@ class Auth_Opauth
 		\Config::load('auth', true);
 		\Config::load('opauth', true);
 
-		// determine the auth driver we're going to use
-		$drivers = \Config::get('auth.driver', array());
-		is_array($drivers) or $drivers = array($drivers);
+		// get the auth driver in use
+		$drivers = normalize_driver_types();
 
+		// determine the auth driver we're going to use
 		if (in_array('Simpleauth', $drivers))
 		{
 			// get the tablename
 			\Config::load('simpleauth', true);
 			static::$provider_table = \Config::get('simpleauth.table_name', 'users').'_providers';
+			static::$db_connection = \Config::get('simpleauth.db_connection', null);
 		}
 
 		elseif (in_array('Ormauth', $drivers))
@@ -52,6 +60,11 @@ class Auth_Opauth
 			// get the tablename
 			\Config::load('ormauth', true);
 			static::$provider_table = \Config::get('ormauth.table_name', 'users').'_providers';
+			static::$db_connection = \Config::get('ormauth.db_connection', null);
+		}
+		else
+		{
+			throw new \OpauthException('No supported driver found. Opauth currently only supports Simpleauth and Ormauth.');
 		}
 	}
 
@@ -116,7 +129,7 @@ class Auth_Opauth
 			array_pop($path);
 
 			// and add 'callback' as the controller callback action
-			$config['callback_url'] = '/'.implode('/', $path).'/callback/';
+			$config['callback_url'] = (empty($path)?'':'/'.implode('/', $path)).'/callback/';
 		}
 
 		// determine the name of the provider we want to call
@@ -195,8 +208,8 @@ class Auth_Opauth
 		{
 			list(, $user_id) = \Auth::instance()->get_user_id();
 
-			$result = \DB::select(\DB::expr('COUNT(*) as count'))->from($this->config['table'])->where('parent_id', '=', $user_id)->execute();
-			$num_linked = ($result and $result = $result->current()) ? $result['count'] : 0;
+			$result = \DB::select(\DB::expr('COUNT(*) as count'))->from($this->config['table'])->where('parent_id', '=', $user_id)->execute(static::$db_connection);
+			$num_linked = ($result and $result = $result->current()) ? (int) $result['count'] : 0;
 
 			// allowed multiple providers, or not authed yet?
 			if ($num_linked === 0 or \Config::get('opauth.link_multiple_providers') === true)
@@ -219,14 +232,14 @@ class Auth_Opauth
 
 			else
 			{
-				$result = \DB::select()->from($this->config['table'])->where('parent_id', '=', $user_id)->limit(1)->as_object()->execute();
+				$result = \DB::select()->from($this->config['table'])->where('parent_id', '=', $user_id)->limit(1)->as_object()->execute(static::$db_connection);
 				$auth = $result ? $result->current() : null;
 				throw new \OpauthException(sprintf('This user is already linked to "%s" and can\'t be linked to another provider.', $auth->provider));
 			}
 		}
 
 		// the user exists, so send him on his merry way as a user
-		elseif ($authentication = \DB::select()->from($this->config['table'])->where('uid', '=', $this->get('auth.uid'))->where('provider', '=', $this->get('auth.provider'))->as_object()->execute() and $authentication->count())
+		elseif ($authentication = \DB::select()->from($this->config['table'])->where('uid', '=', $this->get('auth.uid'))->where('provider', '=', $this->get('auth.provider'))->as_object()->execute(static::$db_connection) and $authentication->count())
 		{
 			// force a login with this username
 			$authentication = $authentication->current();
@@ -249,8 +262,14 @@ class Auth_Opauth
 			}
 
 			// did the provider return enough information to log the user in?
-			if ($this->get('auth.info.nickname') and $this->get('auth.info.email') and $this->get('auth.info.password'))
+			if (($this->get('auth.info.nickname') or $this->get('auth.info.email')) and $this->get('auth.info.password'))
 			{
+				// make sure we have a nickname, if not, use the email address
+				if (empty($this->response['auth']['info']['nickname']))
+				{
+					$this->response['auth']['info']['nickname'] = $this->response['auth']['info']['email'];
+				}
+
 				// make a user with what we have
 				$user_id = $this->create_user($this->response['auth']['info']);
 
@@ -319,10 +338,10 @@ class Auth_Opauth
 		}
 
 		// get rid of old registrations to prevent duplicates
-		\DB::delete($this->config['table'])->where('uid', '=', $data['uid'])->where('provider', '=', $data['provider'])->execute();
+		\DB::delete($this->config['table'])->where('uid', '=', $data['uid'])->where('provider', '=', $data['provider'])->execute(static::$db_connection);
 
 		// insert the new provider UID
-		list($insert_id, $rows_affected) = \DB::insert($this->config['table'])->set($data)->execute();
+		list($insert_id, $rows_affected) = \DB::insert($this->config['table'])->set($data)->execute(static::$db_connection);
 		return $rows_affected ? $insert_id : false;
 	}
 
@@ -387,7 +406,7 @@ class Auth_Opauth
 			isset($user['email']) ? $user['email'] : null,
 
 			// which group are they in?
-			\Config::get('opauth.default_group', -1),
+			isset($user['group_id']) ? $user['group_id'] : \Config::get('opauth.default_group', -1),
 
 			// extra information
 			array(
@@ -402,6 +421,16 @@ class Auth_Opauth
 		);
 
 		return $user_id ?: false;
+	}
+
+	/**
+	 * Returns the Opauth instance for interaction with the core library.
+	 *
+	 * @return \Opauth
+	 */
+	public function get_instance()
+	{
+		return $this->opauth;
 	}
 
 }

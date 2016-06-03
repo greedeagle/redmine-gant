@@ -3,20 +3,17 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
 namespace Fuel\Core;
 
-
-
 class Cache_Storage_Redis extends \Cache_Storage_Driver
 {
-
 	/**
 	 * @const  string  Tag used for opening & closing cache properties
 	 */
@@ -135,7 +132,7 @@ class Cache_Storage_Redis extends \Cache_Storage_Driver
 	/**
 	 * Purge all caches
 	 *
-	 * @param   limit purge to subsection
+	 * @param   string  $section  limit purge to subsection
 	 * @return  bool
 	 */
 	public function delete_all($section)
@@ -220,7 +217,7 @@ class Cache_Storage_Redis extends \Cache_Storage_Driver
 			'created'          => $this->created,
 			'expiration'       => $this->expiration,
 			'dependencies'     => $this->dependencies,
-			'content_handler'  => $this->content_handler
+			'content_handler'  => $this->content_handler,
 		);
 		$properties = '{{'.static::PROPS_TAG.'}}'.json_encode($properties).'{{/'.static::PROPS_TAG.'}}';
 
@@ -231,7 +228,7 @@ class Cache_Storage_Redis extends \Cache_Storage_Driver
 	 * Remove the prepended cache properties and save them in class properties
 	 *
 	 * @param   string
-	 * @throws  UnexpectedValueException
+	 * @throws \UnexpectedValueException
 	 */
 	protected function unprep_contents($payload)
 	{
@@ -288,7 +285,7 @@ class Cache_Storage_Redis extends \Cache_Storage_Driver
 		// get the key for the cache identifier
 		$key = $this->_get_key();
 
-		// fetch the session data from the redis server
+		// fetch the cache data from the redis server
 		$payload = static::$redis->get($key);
 		try
 		{
@@ -305,8 +302,8 @@ class Cache_Storage_Redis extends \Cache_Storage_Driver
 	/**
 	 * validate a driver config value
 	 *
-	 * @param   string  name of the config variable to validate
-	 * @param   mixed   value
+	 * @param   string  $name   name of the config variable to validate
+	 * @param   mixed   $value  value
 	 * @return  mixed
 	 */
 	protected function _validate_config($name, $value)
@@ -315,7 +312,7 @@ class Cache_Storage_Redis extends \Cache_Storage_Driver
 		{
 			case 'database':
 				// do we have a database config
-				if (empty($value) or ! is_array($value))
+				if (empty($value) or ! is_string($value))
 				{
 					$value = 'default';
 				}
@@ -345,7 +342,7 @@ class Cache_Storage_Redis extends \Cache_Storage_Driver
 	/**
 	 * get's the redis key belonging to the cache identifier
 	 *
-	 * @param   bool  if true, remove the key retrieved from the index
+	 * @param   bool  $remove  if true, remove the key retrieved from the index
 	 * @return  string
 	 */
 	protected function _get_key($remove = false)

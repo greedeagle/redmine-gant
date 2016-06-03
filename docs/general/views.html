@@ -17,8 +17,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -52,7 +52,7 @@
 
 			<h3>Creating a view</h3>
 
-			<p>In FuelPHP, Views are located in the fuel/app/views directory. Views can be located in subdirectories. Views are named by their directory path from the fuel/app/views and the file name, so a view file located <em>fuel/app/views/user/join.php</em> would be named <kbd>user/join</kbd>.</p>
+			<p>In FuelPHP, Views are located in the <kbd>APPPATH/views</kbd> directory. Views can be located in subdirectories. Views are named by their directory path from the fuel/app/views and the file name, so a view file located <em>fuel/app/views/user/join.php</em> would be named <kbd>user/join</kbd>.</p>
 
 			<p>Example:</p>
 
@@ -151,11 +151,11 @@
 			configuration value <kbd>security.auto_filter_output</kbd> to <kbd>false</kbd>. For security reasons it is highly recommended
 			that you don't do this!</p>
 
-			<p class="note"><strong>Note on objects:</strong> Unless the passed object is of the type View, ViewModel or Closure, it is
+			<p class="note"><strong>Note on objects:</strong> Unless the passed object is of the type View, Presenter or Closure, it is
 			expected to have a <kbd>__toString()</kbd> method and forced to be a string when output filtering is enabled. If you want
 			to pass it anyway, you need to use <kbd>set($name, $value, false)</kbd>, but don't forget to filter what you
 			use!<br />
-			View &amp; ViewModels are expected to contain HTML and take care of their own filtering which is why they're
+			View &amp; Presenters are expected to contain HTML and take care of their own filtering which is why they're
 			not sanitized. Closures cannot be sanitized, and you should take care to ensure this is done within them if
 			necessary.</p>
 
@@ -282,11 +282,53 @@
 
 			<p>See the <a href="../classes/view.html">View Class in the classes section</a> for View's function descriptions.</p>
 
+				<h3 id="functions">Passing functions to views</h3>
+
+				<p>To pass a View specific function from your code to your View, you use an anonymous function or <a href="http://www.php.net/manual/functions.anonymous.php">Closures</a>:</p>
+
+				<pre class="php"><code>// Controller action
+public function action_index()
+{
+	// construct a view object
+	$view = \View::forge('page/index');
+
+	// set a closure that returns a value
+	$view->somevar = function() { return "somevalue"; };
+
+	// this works the same
+	$view->set('othervar', function() { return "othervalue"; });
+
+	// for closures with arguments, use set_safe to prevent encoding
+	$view->set_safe('echo_upper', function($string) { echo strtoupper($string); });
+}
+
+// Which you can then use in your view:
+echo $somevar, $othervar;   // Outputs: "somevalue" "othervalue"
+$echo_upper('this string'); // Outputs: "THIS STRING"</code></pre>
+
+			<p class="note">
+				Closures are also treated like variables when it comes to filtering.
+				If you have a closure that returns a value, use the <code>set()</code> method, so the
+				value will be encoded according to your filtering setting. If you have a closure that
+				will be used as a modifier, like in the example above, or you have a closure that returns
+				a value that should not be encoded, use the <code>set_safe()</code> method, or pass <code>false</code>
+				as the third parameter of <code>set()</code>.
+			</p>
+
+			<p>
+				For legacy applications that expect a closure to never be filtered, edit your applications
+				<strong>config.php</strong> configuration file, add the following key:
+			</p>
+
+			<pre class="php"><code>/**
+ * Whether to filter closures as well
+ */
+'filter_closures'  => false,</code></pre>
 		</div>
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

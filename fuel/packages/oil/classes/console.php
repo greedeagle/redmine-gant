@@ -5,10 +5,10 @@
  * Fuel is a fast, lightweight, community driven PHP5 framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -25,7 +25,6 @@ namespace Oil;
 
 class Console
 {
-
 	public function __construct()
 	{
 		error_reporting(E_ALL | E_STRICT);
@@ -35,7 +34,7 @@ class Console
 		ini_set("html_errors", 0);
 		ini_set("display_errors", 0);
 
-		while (ob_get_level ())
+		while (ob_get_level())
 		{
 			 ob_end_clean();
 		}
@@ -165,7 +164,7 @@ HELP;
 			'class', 'declare', 'die', 'echo', 'exit', 'for',
 			'foreach', 'function', 'global', 'if', 'include',
 			'include_once', 'print', 'require', 'require_once',
-			'return', 'static', 'switch', 'unset', 'while'
+			'return', 'static', 'switch', 'unset', 'while',
 		);
 
 		$okeq = array('===', '!==', '==', '!=', '<=', '>=');

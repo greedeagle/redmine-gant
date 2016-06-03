@@ -18,8 +18,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../../../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -1003,7 +1003,7 @@ $kerry->last_child($bill)->save();
 
 					<p class="note">
 						From a hierarchy perspective, <strong>first_child</strong> and <strong>last_child</strong> do the same. Only the
-						exact position in the tree, the relation to it's siblings after the insert or relocation of the node, is different.
+						exact position in the tree, the relation to its siblings after the insert or relocation of the node, is different.
 					</p>
 
 					<article>
@@ -1874,7 +1874,7 @@ $result = Model_Tree::forge()->depth();
 					</article>
 
 					<article>
-						<h4 id="method_dump_tree" class="method">dump_tree($as_object = false, $children = 'children', $path = 'path')</h4>
+						<h4 id="method_dump_tree" class="method">dump_tree($as_object = false, $children = 'children', $path = 'path', $pathuri = null)</h4>
 						<p>
 							The <strong>dump_tree</strong> method returns the entire tree, using the current object as root node
 							into a multi-dimensional array.
@@ -1910,6 +1910,16 @@ $result = Model_Tree::forge()->depth();
 												<td>
 													a property by this name is created and will contain the path to the node, starting at the root.
 													This requires the 'title_field' to be configured!
+												</td>
+											</tr>
+											<tr>
+												<th><kbd>$pathuri</kbd></th>
+												<td><pre class="php">null</pre></td>
+												<td>
+													This argument requires an existing table column as input. If defined, it will create a property
+													by the name of this argument, prefixed with "path_", which will contain the path definition pointing
+													to the node, starting at the root, using the column name provided. This is mainly used when the model
+													contains a URL or URI column, so you have both the breadcrumb path (in 'path') and the uri path.
 												</td>
 											</tr>
 										</table>
@@ -1948,11 +1958,70 @@ $children = $bill->children;
 							As with all ORM array's, the table's primary key is used as array index. Note that because the ORM uses objects by
 							reference from a single cache, if you choose to use 'as_object', children will be added to existing objects too.</p>
 					</article>
+
+					<article>
+						<h4 id="method_related" class="method">related($relation, $conditions = array())</h4>
+						<p>
+							The <strong>related</strong> method allows you to fetch related objects when executing a nested set command, indentical
+							to a normal Orm model query.
+						</p>
+						<table class="method">
+							<tbody>
+								<tr>
+									<th class="legend">Static</th>
+									<td>No</td>
+								</tr>
+								<tr>
+									<th>Parameters</th>
+									<td>
+										<table class="parameters">
+											<tr>
+												<th>Param</th>
+												<th>Default</th>
+												<th class="description">Description</th>
+											</tr>
+											<tr>
+												<th><kbd>$related</kbd></th>
+												<td><pre class="php">required</pre></td>
+												<td>The name of the relation to include.</td>
+											</tr>
+											<tr>
+												<th><kbd>$conditions</kbd></th>
+												<td><pre class="php">array()</pre></td>
+												<td>Any conditions you want to pass on when fetching the related objects.</td>
+											</tr>
+										</table>
+									</td>
+								</tr>
+								<tr>
+									<th>Returns</th>
+									<td>Model_Nestedset, for chaining.</td>
+								</tr>
+								<tr>
+									<th>Example</th>
+									<td>
+										<pre class="php"><code>// include related 'child' objects in the result
+$tree = $bill->related('child')->dump_tree();
+
+// get the descendants of $ben
+$descendants = $ben->descendants()->related('child')->get();
+
+// This will NOT include the child relation!
+$descendants = $ben->related('child')->descendants()->get();
+</code></pre>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+						<p class="note">
+							If you want to use this method on any nested set operation (like for example decendants()), make sure to setup that
+							operation first. If you don't, your included relations will be reset my the nested set operation method call!</p>
+					</article>
                 </section>
 			</div>
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

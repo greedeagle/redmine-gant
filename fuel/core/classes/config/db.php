@@ -13,14 +13,15 @@ class Config_Db implements Config_Interface
 
 	protected $vars = array();
 
+	protected $database;
+
 	protected $table;
 
 	/**
 	 * Sets up the file to be parsed and variables
 	 *
-	 * @param   string  $file  Config identifier name
+	 * @param   string  $identifier  Config identifier name
 	 * @param   array   $vars  Variables to parse in the data retrieved
-	 * @return  void
 	 */
 	public function __construct($identifier = null, $vars = array())
 	{
@@ -33,6 +34,7 @@ class Config_Db implements Config_Interface
 			'DOCROOT' => DOCROOT,
 		) + $vars;
 
+		$this->database = \Config::get('config.database', null);
 		$this->table = \Config::get('config.table_name', 'config');
 	}
 
@@ -40,7 +42,9 @@ class Config_Db implements Config_Interface
 	 * Loads the config file(s).
 	 *
 	 * @param   bool  $overwrite  Whether to overwrite existing values
-	 * @return  array  the config array
+	 * @param   bool  $cache      This parameter will ignore in this implement.
+	 * @return  array the config array
+	 * @throws  \Database_Exception
 	 */
 	public function load($overwrite = false, $cache = true)
 	{
@@ -49,7 +53,7 @@ class Config_Db implements Config_Interface
 		// try to retrieve the config from the database
 		try
 		{
-			$result = \DB::select('config')->from($this->table)->where('identifier', '=', $this->identifier)->execute();
+			$result = \DB::select('config')->from($this->table)->where('identifier', '=', $this->identifier)->execute($this->database);
 		}
 		catch (Database_Exception $e)
 		{
@@ -141,12 +145,12 @@ class Config_Db implements Config_Interface
 		$contents = serialize($contents);
 
 		// update the config in the database
-		$result = \DB::update($this->table)->set(array('config' => $contents, 'hash' => uniqid()))->where('identifier', '=', $this->identifier)->execute();
+		$result = \DB::update($this->table)->set(array('config' => $contents, 'hash' => uniqid()))->where('identifier', '=', $this->identifier)->execute($this->database);
 
 		// if there wasn't an update, do an insert
 		if ($result === 0)
 		{
-			list($notused, $result) = \DB::insert($this->table)->set(array('identifier' => $this->identifier, 'config' => $contents, 'hash' => uniqid()))->execute();
+			list($notused, $result) = \DB::insert($this->table)->set(array('identifier' => $this->identifier, 'config' => $contents, 'hash' => uniqid()))->execute($this->database);
 		}
 
 		return $result === 1;

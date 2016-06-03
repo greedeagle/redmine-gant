@@ -3,19 +3,17 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
 namespace Fuel\Core;
 
-
 class Response
 {
-
 	/**
 	 * @var  array  An array of status codes and messages
 	 *
@@ -68,7 +66,7 @@ class Response
 		424 => 'Failed Dependency',
 		426 => 'Upgrade Required',
 		428 => 'Precondition Required',
-		428 => 'Too Many Requests',
+		429 => 'Too Many Requests',
 		431 => 'Request Header Fields Too Large',
 		500 => 'Internal Server Error',
 		501 => 'Not Implemented',
@@ -89,7 +87,7 @@ class Response
 	 *
 	 * @param   string  $body    The response body
 	 * @param   int     $status  The HTTP response status for this response
-	 * @param   array   $headers Array of HTTP headers for this reponse
+	 * @param   array   $headers Array of HTTP headers for this response
 	 *
 	 * @return  Response
 	 */
@@ -152,13 +150,16 @@ class Response
 	/**
 	 * Redirects back to the previous page, if that page is within the current
 	 * application. If not, it will redirect to the given url, and if none is
-	 * given, back to the application root
+	 * given, back to the application root. If the current page is the application
+	 * root, an exception is thrown
 	 *
 	 * @param   string  $url     The url
 	 * @param   string  $method  The redirect method
 	 * @param   int     $code    The redirect status code
 	 *
 	 * @return  void
+	 *
+	 * @throws  \RuntimeException  If it would redirect back to itself
 	 */
 	public static function redirect_back($url = '', $method = 'location', $code = 302)
 	{
@@ -171,6 +172,12 @@ class Response
 				// redirect back to where we came from
 				static::redirect($referrer, $method, $code);
 			}
+		}
+
+		// make sure we're not redirecting back to ourself
+		if (\Uri::create($url) == \Uri::current())
+		{
+			throw new \RuntimeException('You can not redirect back here, it would result in a redirect loop!');
 		}
 
 		// no referrer or an external link, do a normal redirect
@@ -195,8 +202,9 @@ class Response
 	/**
 	 * Sets up the response with a body and a status code.
 	 *
-	 * @param  string  $body    The response body
-	 * @param  string  $status  The response status
+	 * @param  string  $body     The response body
+	 * @param  int     $status   The response status
+	 * @param  array   $headers
 	 */
 	public function __construct($body = null, $status = 200, array $headers = array())
 	{
@@ -211,7 +219,7 @@ class Response
 	/**
 	 * Sets the response status code
 	 *
-	 * @param   string  $status  The status code
+	 * @param   int  $status  The status code
 	 *
 	 * @return  Response
 	 */
@@ -224,9 +232,9 @@ class Response
 	/**
 	 * Adds a header to the queue
 	 *
-	 * @param   string  The header name
-	 * @param   string  The header value
-	 * @param   string  Whether to replace existing value for the header, will never overwrite/be overwritten when false
+	 * @param   string       $name     The header name
+	 * @param   string       $value    The header value
+	 * @param   string|bool  $replace  Whether to replace existing value for the header, will never overwrite/be overwritten when false
 	 *
 	 * @return  Response
 	 */
@@ -245,9 +253,28 @@ class Response
 	}
 
 	/**
+	 * Adds multiple headers to the queue
+	 *
+	 * @param   array        $headers  Assoc array with header name / value combinations
+	 * @param   string|bool  $replace  Whether to replace existing value for the header, will never overwrite/be overwritten when false
+	 *
+	 * @return  Response
+	 */
+	public function set_headers($headers, $replace = true)
+	{
+		foreach ($headers as $key => $value)
+		{
+			$this->set_header($key, $value, $replace);
+		}
+
+		return $this;
+	}
+
+
+	/**
 	 * Gets header information from the queue
 	 *
-	 * @param   string  The header name, or null for all headers
+	 * @param   string  $name  The header name, or null for all headers
 	 *
 	 * @return  mixed
 	 */
@@ -266,7 +293,7 @@ class Response
 	/**
 	 * Sets (or returns) the body for the response
 	 *
-	 * @param   string  The response content
+	 * @param   string|bool  $value  The response content
 	 *
 	 * @return  Response|string
 	 */
@@ -352,15 +379,6 @@ class Response
 	 */
 	public function __toString()
 	{
-		// special treatment for array's
-		if (is_array($this->body))
-		{
-			// this var_dump() is here intentionally !
-			ob_start();
-			var_dump($this->body);
-			$this->body = html_entity_decode(ob_get_clean());
-		}
-
 		return (string) $this->body;
 	}
 }

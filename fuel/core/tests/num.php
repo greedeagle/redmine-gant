@@ -3,10 +3,10 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -24,7 +24,6 @@ namespace Fuel\Core;
  */
 class Test_Num extends TestCase
 {
-
 	/**
 	 * @see     Num::bytes
 	 */
@@ -79,7 +78,6 @@ class Test_Num extends TestCase
 		$expected = '2M';
 
 		$this->assertEquals($expected, $output);
-
 
 		$output = Num::quantity('1000000000');
 		$expected = '1B';

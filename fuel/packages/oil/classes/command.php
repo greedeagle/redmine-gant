@@ -5,10 +5,10 @@
  * Fuel is a fast, lightweight, community driven PHP5 framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -49,7 +49,7 @@ class Command
 				case 'g':
 				case 'generate':
 
-					$action = isset($args[2]) ? $args[2]: 'help';
+					$action = isset($args[2]) ? $args[2] : 'help';
 
 					$subfolder = 'orm';
 					if (is_int(strpos($action, '/')))
@@ -62,6 +62,7 @@ class Command
 						case 'config':
 						case 'controller':
 						case 'model':
+						case 'module':
 						case 'migration':
 						case 'task':
 						case 'package':
@@ -103,7 +104,7 @@ class Command
 				case 'p':
 				case 'package':
 
-					$action = isset($args[2]) ? $args[2]: 'help';
+					$action = isset($args[2]) ? $args[2] : 'help';
 
 					switch ($action)
 					{
@@ -129,7 +130,7 @@ class Command
 				case 'cell':
 				case 'cells':
 
-					$action = isset($args[2]) ? $args[2]: 'help';
+					$action = isset($args[2]) ? $args[2] : 'help';
 
 					switch ($action)
 					{
@@ -169,11 +170,13 @@ Runtime options:
   --file=<file>              # Run a test on a specific file only.
   --group=<group>            # Only runs tests from the specified group(s).
   --exclude-group=<group>    # Exclude tests from the specified group(s).
+  --testsuite=<testsuite>    # Only runs tests from the specified testsuite(s).
   --coverage-clover=<file>   # Generate code coverage report in Clover XML format.
   --coverage-html=<dir>      # Generate code coverage report in HTML format.
   --coverage-php=<file>      # Serialize PHP_CodeCoverage object to file.
   --coverage-text=<file>     # Generate code coverage report in text format.
   --log-junit=<file>         # Generate report of test execution in JUnit XML format to file.
+  --debug                    # Display debugging information during test execution.
 
 Description:
   Run phpunit on all or a subset of tests defined for the current application.
@@ -209,7 +212,7 @@ HELP;
 						// Suppressing this because if the file does not exist... well thats a bad thing and we can't really check
 						// I know that supressing errors is bad, but if you're going to complain: shut up. - Phil
 						$phpunit_autoload_path = \Config::get('oil.phpunit.autoload_path', 'PHPUnit/Autoload.php' );
-						@include_once($phpunit_autoload_path);
+						@include_once $phpunit_autoload_path;
 
 						// Attempt to load PHUnit.  If it fails, we are done.
 						if ( ! $is_phar and ! class_exists('PHPUnit_Framework_TestCase'))
@@ -233,6 +236,12 @@ HELP;
 						// Respect the group options
 						\Cli::option('group') and $command .= ' --group '.\Cli::option('group');
 						\Cli::option('exclude-group') and $command .= ' --exclude-group '.\Cli::option('exclude-group');
+						
+						// Respect the testsuite options
+						\Cli::option('testsuite') and $command .= ' --testsuite '.\Cli::option('testsuite');
+
+						// Respect the debug options
+						\Cli::option('debug') and $command .= ' --debug';
 
 						// Respect the coverage-html option
 						\Cli::option('coverage-html') and $command .= ' --coverage-html '.\Cli::option('coverage-html');
@@ -259,22 +268,50 @@ HELP;
 				case 's':
 				case 'server':
 
-					if (version_compare(PHP_VERSION, '5.4.0') < 0)
+					if (isset($args[2]) and $args[2] == 'help')
 					{
-						\Cli::write('The PHP built-in webserver is only available on PHP 5.4+', 'red');
-						break;
+		$output = <<<HELP
+
+Usage:
+  php oil [s|server]
+
+Runtime options:
+  --php=<file>               # The full pathname of your PHP-CLI binary if it's not in the path.
+  --port=<port>              # TCP port number the webserver should listen too. Defaults to 8000.
+  --host=<host>              # Hostname the webserver should run at. Defaults to "localhost".
+  --docroot=<dir>            # Your FuelPHP docroot. Defaults to "public".
+  --router=<file>            # PHP router script. Defaults to "fuel/packages/oil/phpserver.php".
+
+Description:
+  Starts a local webserver to run your FuelPHP application, using PHP 5.4+ internal webserver.
+
+Examples:
+  php oil server -p=8080
+
+Documentation:
+  http://fuelphp.com/docs/packages/oil/server.html
+HELP;
+		\Cli::write($output);
 					}
+					else
+					{
+						if (version_compare(PHP_VERSION, '5.4.0') < 0)
+						{
+							\Cli::write('The PHP built-in webserver is only available on PHP 5.4+', 'red');
+							break;
+						}
 
-					$php = \Cli::option('php', 'php');
-					$port = \Cli::option('p', \Cli::option('port', '8000'));
-					$host = \Cli::option('h', \Cli::option('host', 'localhost'));
-					$docroot = \Cli::option('d', \Cli::option('docroot', 'public/'));
-					$router = \Cli::option('r', \Cli::option('router', __DIR__.DS.'..'.DS.'phpserver.php'));
+						$php = \Cli::option('php', 'php');
+						$port = \Cli::option('p', \Cli::option('port', '8000'));
+						$host = \Cli::option('h', \Cli::option('host', 'localhost'));
+						$docroot = \Cli::option('d', \Cli::option('docroot', 'public'));
+						$router = \Cli::option('r', \Cli::option('router', __DIR__.DS.'..'.DS.'phpserver.php'));
 
-					\Cli::write("Listening on http://$host:$port");
-					\Cli::write("Document root is $docroot");
-					\Cli::write("Press Ctrl-C to quit.");
-					passthru("$php -S $host:$port -t $docroot $router");
+						\Cli::write("Listening on http://$host:$port");
+						\Cli::write("Document root is $docroot");
+						\Cli::write("Press Ctrl-C to quit.");
+						passthru("$php -S $host:$port -t $docroot $router");
+					}
 				break;
 
 				case 'create':
@@ -294,13 +331,15 @@ HELP;
 		}
 	}
 
-	private static function print_exception(\Exception $ex)
+	protected static function print_exception(\Exception $ex)
 	{
 		\Cli::error('Uncaught exception '.get_class($ex).': '.$ex->getMessage());
-		\Cli::error('Callstack: ');
-		\Cli::error($ex->getTraceAsString());
+		if (\Fuel::$env != \Fuel::PRODUCTION)
+		{
+			\Cli::error('Callstack: ');
+			\Cli::error($ex->getTraceAsString());
+		}
 		\Cli::beep();
-
 		\Cli::option('speak') and `say --voice="Trinoids" "{$ex->getMessage()}"`;
 
 		if (($previous = $ex->getPrevious()) != null)
@@ -343,7 +382,7 @@ HELP;
 
 	}
 
-	private static function _clear_args($actions = array())
+	protected static function _clear_args($actions = array())
 	{
 		foreach ($actions as $key => $action)
 		{

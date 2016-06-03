@@ -9,7 +9,7 @@
 	</style>
 	<?php echo Asset::js(array(
 		'http://ajax.googleapis.com/ajax/libs/jquery/1.7/jquery.min.js',
-		'bootstrap.js'
+		'bootstrap.js',
 	)); ?>
 	<script>
 		$(function(){ $('.topbar').dropdown(); });
@@ -75,7 +75,7 @@
 				</div>
 <?php endif; ?>
 <?php if (Session::get_flash('error')): ?>
-				<div class="alert alert-error alert-dismissable">
+				<div class="alert alert-danger alert-dismissable">
 					<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
 					<p>
 					<?php echo implode('</p><p>', (array) Session::get_flash('error')); ?>

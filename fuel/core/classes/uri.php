@@ -3,10 +3,10 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -22,7 +22,6 @@ namespace Fuel\Core;
  */
 class Uri
 {
-
 	/**
 	 * Returns the desired segment, or $default if it does not exist.
 	 *
@@ -114,7 +113,7 @@ class Uri
 	 * Converts the current URI segments to an associative array.  If
 	 * the URI has an odd number of segments, an empty value will be added.
 	 *
-	 * @param  int  segment number to start from. default value is the first segment
+	 * @param   int    $start  segment number to start from. default value is the first segment
 	 * @return  array  the assoc array
 	 */
 	public static function to_assoc($start = 1)
@@ -152,7 +151,7 @@ class Uri
 	public static function create($uri = null, $variables = array(), $get_variables = array(), $secure = null)
 	{
 		$url = '';
-		$uri = $uri ?: static::string();
+		is_null($uri) and $uri = static::string();
 
 		// If the given uri is not a full URL
 		if( ! preg_match("#^(http|https|ftp)://#i", $uri))
@@ -166,10 +165,14 @@ class Uri
 		}
 		$url .= ltrim($uri, '/');
 
-		// Add a url_suffix if defined and the url doesn't already have one
-		if (substr($url, -1) != '/' and (($suffix = strrchr($url, '.')) === false or strlen($suffix) > 5))
+		// stick a url suffix onto it if defined and needed
+		if ($url_suffix = \Config::get('url_suffix', false) and substr($url, -1) != '/')
 		{
-			\Config::get('url_suffix') and $url .= \Config::get('url_suffix');
+			$current_suffix = strrchr($url, '.');
+			if ( ! $current_suffix or strpos($current_suffix, '/') !== false)
+			{
+				$url .= $url_suffix;
+			}
 		}
 
 		if ( ! empty($get_variables))
@@ -306,8 +309,7 @@ class Uri
 	 * Construct takes a URI or detects it if none is given and generates
 	 * the segments.
 	 *
-	 * @param   string  The URI
-	 * @return  void
+	 * @param   string  $uri  The URI
 	 */
 	public function __construct($uri = null)
 	{

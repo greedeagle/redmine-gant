@@ -1,19 +1,20 @@
 <?php
 /**
- * Database query builder.
+ * Part of the Fuel framework.
  *
- * @package    Fuel/Database
- * @category   Query
- * @author     Kohana Team
- * @copyright  (c) 2008-2009 Kohana Team
- * @license    http://kohanaphp.com/license
+ * @package    Fuel
+ * @version    1.8
+ * @author     Fuel Development Team
+ * @license    MIT License
+ * @copyright  2010 - 2016 Fuel Development Team
+ * @copyright  2008 - 2009 Kohana Team
+ * @link       http://fuelphp.com
  */
 
 namespace Fuel\Core;
 
 abstract class Database_Query_Builder extends \Database_Query
 {
-
 	/**
 	 * Compiles an array of JOIN statements into an SQL partial.
 	 *
@@ -161,7 +162,7 @@ abstract class Database_Query_Builder extends \Database_Query
 		foreach ($values as $group)
 		{
 			// Split the set
-			list ($column, $value) = $group;
+			list($column, $value) = $group;
 
 			// Quote the column name
 			$column = $db->quote_identifier($column);
@@ -192,12 +193,13 @@ abstract class Database_Query_Builder extends \Database_Query
 
 		foreach ($columns as $group)
 		{
-			list ($column, $direction) = $group;
+			list($column, $direction) = $group;
 
+			$direction = strtoupper($direction);
 			if ( ! empty($direction))
 			{
 				// Make the direction uppercase
-				$direction = ' '.strtoupper($direction);
+				$direction = ' '.($direction == 'ASC' ? 'ASC' : 'DESC');
 			}
 
 			$sort[] = $db->quote_identifier($column).$direction;

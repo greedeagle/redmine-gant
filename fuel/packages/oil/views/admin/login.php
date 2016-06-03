@@ -3,7 +3,7 @@
 		<?php echo Form::open(array()); ?>
 
 			<?php if (isset($_GET['destination'])): ?>
-				<?php echo Form::hidden('destination',$_GET['destination']); ?>
+				<?php echo Form::hidden('destination', $_GET['destination']); ?>
 			<?php endif; ?>
 
 			<?php if (isset($login_error)): ?>
@@ -15,7 +15,7 @@
 				<?php echo Form::input('email', Input::post('email'), array('class' => 'form-control', 'placeholder' => 'Email or Username', 'autofocus')); ?>
 
 				<?php if ($val->error('email')): ?>
-					<span class="control-label"><?php echo $val->error('email')->get_message('You must provide a username or email'); ?></sőan>
+					<span class="control-label"><?php echo $val->error('email')->get_message('You must provide a username or email'); ?></span>
 				<?php endif; ?>
 			</div>
 

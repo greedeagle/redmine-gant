@@ -1,11 +1,11 @@
 /* set the page title, including the version of these docs */
-var DocVersion = "1.7";
+var DocVersion = "1.8";
 
 // set the google CSE key based on the docversion
-if (DocVersion.indexOf('-dev')) {
-	var GoogleCSE = "006268519150918941486:avkdxx7rmmc";
-} else {
+if (DocVersion.indexOf('-dev') == -1) {
 	var GoogleCSE = "006268519150918941486:vg1sweimb7m";
+} else {
+	var GoogleCSE = "006268519150918941486:avkdxx7rmmc";
 }
 
 /*! jQuery v1.9.1 | (c) 2005, 2012 jQuery Foundation, Inc. | jquery.org/license
@@ -350,7 +350,7 @@ function setup() {
 	}
 
 	var title = $('#header div h1').html();
-	$('#header div h1').html(title.replace('</strong>', '</strong><span>'+DocVersion+'</span>'));
+	$('#header div h1').html(title.replace('<strong>', '<span>'+DocVersion+'</span><strong>'));
 
 	if(Cookie.read('menu') === 'true') {
 		$('#toc_handle').trigger('snapopen');
@@ -370,18 +370,18 @@ var pane_names = {
 
 panes.main = {
 	"Basic": {
-		"Home":			"index.html",
-		"Table of Contents": "toc.html",
-		"Requirements":	"requirements.html",
-		"License":		"license.html",
-		"Contribute":	"contribute.html",
-		"Credits":		"credits.html"
+		"Home":					"index.html",
+		"Table of Contents":	"toc.html",
+		"Requirements":			"requirements.html",
+		"License":				"license.html",
+		"Contribute":			"contribute.html",
+		"Credits":				"credits.html",
+		"External info":		"installation/external.html"
 	},
 	"Installation": {
 		"Instructions":			"installation/instructions.html",
 		"Download":				"installation/download.html",
 		"Upgrade":				"installation/upgrade.html",
-		"Tutorials":			"installation/tutorials.html",
 		"Troubleshooting":		"installation/troubleshooting.html"
 	},
 	"General": {
@@ -396,13 +396,14 @@ panes.main = {
 		"Model-View-Controller":	"general/mvc.html",
 		"Models":			"general/models.html",
 		"Views":			"general/views.html",
-		"ViewModels":		"general/viewmodels.html",
+		"Presenters":		"general/presenters.html",
 		"Controllers": {
 			"Base" :		"general/controllers/base.html",
 			"Template":		"general/controllers/template.html",
 			"Rest":			"general/controllers/rest.html",
 			"Hybrid":		"general/controllers/hybrid.html"
 		},
+		"Namespacing":		"general/namespacing.html",
 		"Routing":			"general/routing.html",
 		"Security":			"general/security.html",
 		"Modules":			"general/modules.html",
@@ -445,7 +446,11 @@ panes.core = {
 		"Cli":			"classes/cli.html",
 		"Config":		"classes/config.html",
 		"Cookie":		"classes/cookie.html",
-		"Crypt":		"classes/crypt.html",
+		"Crypt": {
+			"Configuration":	"classes/crypt/config.html",
+			"Usage":			"classes/crypt/usage.html",
+			"Advanced":			"classes/crypt/advanced.html"
+		},
 		"Database": {
 			"Introduction":   	  "classes/database/introduction.html",
 			"Usage":          	  "classes/database/usage.html",
@@ -465,12 +470,15 @@ panes.core = {
 		"Event":		"classes/event.html",
 		// "Error":		"todo.html",
 		// "Exception":	"todo.html",
-		"Fieldset":		"classes/fieldset.html",
+		"Fieldset": {
+			"Fieldset":			"classes/fieldset/fieldset.html",
+			"Fieldset Field":	"classes/fieldset/field.html",
+		},
 		"File": {
 			"Introduction":	"classes/file/intro.html",
 			"Usage":		"classes/file/usage.html",
 			"Advanced":		"classes/file/advanced.html",
-			"Handlers":		"classes/file/handlers.html",
+			"Handlers":		"classes/file/handlers.html"
 		},
 		"Finder":		"classes/finder.html",
 		"Form":			"classes/form.html",
@@ -498,6 +506,7 @@ panes.core = {
 		"Num":			"classes/num.html",
 		"Package":		"classes/package.html",
 		"Pagination":	"classes/pagination.html",
+		"Presenter":	"classes/presenter.html",
 		"Profiler":		"classes/profiler.html",
 		"Redis_Db":		"classes/redis.html",
 		"Request": {
@@ -541,7 +550,8 @@ panes.oil = {
 		"Refine":			"packages/oil/refine.html",
 		"Package":			"packages/oil/package.html",
 		"Test":				"packages/oil/test.html",
-		"Console":			"packages/oil/console.html"
+		"Console":			"packages/oil/console.html",
+		"Server":			"packages/oil/server.html"
 	}
 };
 

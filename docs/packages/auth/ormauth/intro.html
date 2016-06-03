@@ -17,8 +17,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../../../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -47,7 +47,7 @@
 
 			<p>
 				Ormauth is a set of authentication and authorisation drivers that provide a similar functionality as Simpleauth,
-				but stores it's data in the database instead of in a configuration file. The data is accessed through ORM models.
+				but stores its data in the database instead of in a configuration file. The data is accessed through ORM models.
 			</p>
 			<p>
 				Besides this, it also comes with additional functionality. Unlike Simpleauth, Ormauth supports roles assigned directly
@@ -199,17 +199,17 @@ $role->save();</code></pre>
 				definitions, flush them too.
 			</p>
 
-<pre class="php"><code>// flush all the cached permissions
-\Cache::delete(\Config::get('ormauth.cache_prefix', 'auth').'.permissions');
+<pre class="php"><code>// flush the permissions of a single user (with id 12211)
+\Cache::delete(\Config::get('ormauth.cache_prefix', 'auth').'.permissions.user_12211');
+
+// flush all the cached permissions
+\Cache::delete_all(\Config::get('ormauth.cache_prefix', 'auth').'.permissions');
 
 // flush all the cached groups
 \Cache::delete(\Config::get('ormauth.cache_prefix', 'auth').'.groups');
 
 // flush all the cached roles
-\Cache::delete(\Config::get('ormauth.cache_prefix', 'auth').'.roles');
-
-// flush the permissions of a single user (with id 12211)
-\Cache::delete(\Config::get('ormauth.cache_prefix', 'auth').'.permissions.user_12211');</code></pre>
+\Cache::delete(\Config::get('ormauth.cache_prefix', 'auth').'.roles');</code></pre>
 
 			<h3 id="configuration">Configuration</h3>
 
@@ -378,7 +378,7 @@ $role->save();</code></pre>
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

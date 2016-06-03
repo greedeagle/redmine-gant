@@ -18,8 +18,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -89,6 +89,15 @@
 							</td>
 						</tr>
 						<tr>
+							<th>csrf_bad_request_on_fail</th>
+							<td>boolean</td>
+							<td><pre class="php"><code>false</code></pre></td>
+							<td>
+								If <strong>true</strong>, a HttpBadRequestException will be thrown when csrf token validation fails. If <strong>false</strong>, a
+								generic SecurityException will be thrown. Defaults to <strong>false</strong> for B/C reasons.
+							</td>
+						</tr>
+						<tr>
 							<th>uri_filter</th>
 							<td>array</td>
 							<td><pre class="php"><code>array('htmlentities')</code></pre></td>
@@ -109,7 +118,7 @@
 							<td>array</td>
 							<td><pre class="php"><code>array('Security::htmlentities')</code></pre></td>
 							<td>
-								Array of callable items (PHP functions, object methods, static class methods) used to filter variables send to a View or Viewmodel.
+								Array of callable items (PHP functions, object methods, static class methods) used to filter variables send to a View or Presenter.
 								For security reasons, you are <strong>required</strong> to define an output filter.
 							</td>
 						</tr>
@@ -140,7 +149,7 @@
 						<tr>
 							<th>whitelisted_classes</th>
 							<td>array</td>
-							<td><pre class="php"><code>array('stdClass', 'Fuel\\Core\\View',<br /> 'Fuel\\Core\\ViewModel', 'Closure')</code></pre></td>
+							<td><pre class="php"><code>array('stdClass', 'Fuel\\Core\\View',<br /> 'Fuel\\Core\\Presenter', 'Closure')</code></pre></td>
 							<td>
 								When auto encoding of view variables is enabled, you can run into issues when passing objects to the view. Classes defined in this
 								array will be exempt from auto encoding.
@@ -149,7 +158,7 @@
 						<tr>
 							<th>csrf_autoload</th>
 							<td>boolean</td>
-							<td><pre class="php"><code>true</code></pre></td>
+							<td><pre class="php"><code>false</code></pre></td>
 							<td>
 								When true, load and check the CSRF token using check_token() automatically. A SecurityException will be thrown if the check fails.
 							</td>
@@ -160,6 +169,14 @@
 							<td><pre class="php"><code>array('post', 'put', 'delete')</code></pre></td>
 							<td>
 								When csrf_autoload is true, the CSRF token will be validated for all http methods in this array.
+							</td>
+						</tr>
+						<tr>
+							<th>csrf_auto_token</th>
+							<td>boolean</td>
+							<td><pre class="php"><code>false</code></pre></td>
+							<td>
+								When true, Form::open() adds CSRF token hidden field automatically.
 							</td>
 						</tr>
 					</tbody>
@@ -587,7 +604,7 @@ $text = e($text);</code></pre>
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

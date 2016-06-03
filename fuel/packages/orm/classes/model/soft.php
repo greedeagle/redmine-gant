@@ -5,10 +5,10 @@
  * Fuel is a fast, lightweight, community driven PHP5 framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -16,7 +16,6 @@ namespace Orm;
 
 class RelationNotSoft extends \Exception
 {
-
 }
 
 /**
@@ -29,7 +28,6 @@ class RelationNotSoft extends \Exception
  */
 class Model_Soft extends Model
 {
-
 	/**
 	 * Default column name that contains the deleted timestamp
 	 * @var string
@@ -49,6 +47,8 @@ class Model_Soft extends Model
 	protected static $_soft_delete_cached = array();
 
 	protected static $_disable_filter = array();
+
+	protected $_disable_soft_delete = false;
 
 	/**
 	 * Gets the soft delete properties.
@@ -154,6 +154,12 @@ class Model_Soft extends Model
 
 	protected function delete_self()
 	{
+		// If soft deleting has been disabled then just call the parent's delete
+		if ($this->_disable_soft_delete)
+		{
+			return parent::delete_self();
+		}
+
 		$deleted_column = static::soft_delete_property('deleted_field', static::$_default_field_name);
 		$mysql_timestamp = static::soft_delete_property('mysql_timestamp', static::$_default_mysql_timestamp);
 
@@ -174,7 +180,12 @@ class Model_Soft extends Model
 	 */
 	public function purge($cascade = null, $use_transaction = false)
 	{
-		parent::delete($cascade, $use_transaction);
+
+		$this->_disable_soft_delete = true;
+		$result = parent::delete($cascade, $use_transaction);
+		$this->_disable_soft_delete = false;
+
+		return $result;
 	}
 
 	/**
@@ -205,7 +216,7 @@ class Model_Soft extends Model
 		foreach ($this->relations() as $rel_name => $rel)
 		{
 			//get the cascade delete status
-			$rel_cascade = is_null($cascade_restore) ? $rel->cascade_delete : (bool)$cascade_restore;
+			$rel_cascade = is_null($cascade_restore) ? $rel->cascade_delete : (bool) $cascade_restore;
 
 			//Make sure that the other model is soft delete too
 			if ($rel_cascade)

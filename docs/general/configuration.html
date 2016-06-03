@@ -17,8 +17,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -345,7 +345,7 @@ array("always_load" => array("packages" => array(...) ) );
 						<td>array</td>
 						<td><pre class="php"><code>array()</code></pre></td>
 						<td>
-							What php functions filter the input arrays ($_GET, $_POST and $_COOKIE). Can be set to <em>xxs_clean</em>,
+							What php functions filter the input arrays ($_GET, $_POST and $_COOKIE). Can be set to <em>xss_clean</em>,
 							this may cause a performance hit based on the size of the input.
 						</td>
 					</tr>
@@ -354,7 +354,7 @@ array("always_load" => array("packages" => array(...) ) );
 						<td>array</td>
 						<td><pre class="php"><code>array()</code></pre></td>
 						<td>
-							What php functions filter the variables set to a view. Can be set to <em>xxs_clean</em>,
+							What php functions filter the variables set to a view. Can be set to <em>xss_clean</em>,
 							this may cause a performance hit based on the size of the variables.
 						</td>
 					</tr>
@@ -372,7 +372,7 @@ array("always_load" => array("packages" => array(...) ) );
 						<td><pre class="php"><code>array(
 'stdClass',
 'Fuel\\Core\\View',
-'Fuel\\Core\\ViewModel',
+'Fuel\\Core\\Presenter',
 'Closure'
 )</code></pre></td>
 						<td>
@@ -510,7 +510,7 @@ array("always_load" => array("packages" => array(...) ) );
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

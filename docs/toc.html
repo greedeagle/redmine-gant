@@ -17,8 +17,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -60,7 +60,7 @@
 				<li><a href="installation/instructions.html">Instructions</a> - How to install the FuelPHP framework</li>
 				<li><a href="installation/download.html">Download</a> - Download a version of the framework as a zip file</li>
 				<li><a href="installation/upgrade.html">Upgrade</a> - How do I upgrade an existing FuelPHP application</li>
-				<li><a href="installation/tutorials.html">Tutorials</a> - External tutorials, courses and screencasts</li>
+				<li><a href="installation/external.html">External info</a> - Contributed translations, tutorials, courses and screencasts</li>
 				<li><a href="installation/troubleshooting.html">Troubleshooting</a> - An overview of common problems</li>
 			</ul>
 
@@ -79,7 +79,7 @@
 				<li><a href="general/mvc.html">Model-View-Controller</a> - Introduction to the Model-View-Controller principle</li>
 				<li><a href="general/models.html">Models</a> - What are they, and how are they used?</li>
 				<li><a href="general/views.html">Views</a> - Creating output</li>
-				<li><a href="general/viewmodels.html">ViewModels</a> - Separating display logic from your view templates</li>
+				<li><a href="general/presenters.html">Presenters</a> - Separating display logic from your view templates</li>
 				<li>Controllers
 					<ul>
 						<li><a href="general/controllers/base.html">Base</a> - What are controllers, how do they work?</li>
@@ -88,6 +88,7 @@
 						<li><a href="general/controllers/hybrid.html">Hybrid</a> - A base controller for combined template output and a RESTful API</li>
 					</ul>
 				</li>
+				<li><a href="general/namespacing.html">Namespacing</a> - Use namespaces in your applications classes</li>
 				<li><a href="general/routing.html">Routing</a> - Route a URI request to a controller action</li>
 				<li><a href="general/security.html">Security</a> - Making sure you build secure applications</li>
 				<li><a href="general/modules.html">Modules</a> - Making your applications modular, and modules portable</li>
@@ -107,7 +108,7 @@
 				<li><a href="vendor/markdown.html">Markdown</a> - A parser for Markdown text</li>
 				<li><a href="vendor/phpquickprofiler.html">PHPQuickProfiler</a> - The basis of the FuelPHP profiler</li>
 				<li><a href="vendor/phpseclib.html">PHPSecLib</a> - Everything related to encryption and secure communication</li>
-				<li><a href="vendor/spyc.html">spyc</a> - A HAML parser</li>
+				<li><a href="vendor/spyc.html">spyc</a> - A YAML parser</li>
 			</ul>
 
 			<h2>FuelPHP Core</h2>
@@ -161,9 +162,22 @@
 				<li><a href="classes/date.html">Date</a> - Working with dates, times and timezones</li>
 				<li><a href="classes/debug.html">Debug</a> - Utility class with debugging features</li>
 				<li><a href="classes/event.html">Event</a> - Create an event-driven application</li>
-				<li>Error</li>
+				<li>Errorhandler</li>
 				<li>Exception</li>
-				<li><a href="classes/fieldset.html">Fieldset</a> - An object oriented way to generate HTML forms</li>
+				<li>Fieldset - An object oriented way to generate HTML forms
+					<ul>
+						<li><a href="classes/fieldset/fieldset.html">Fieldset</a> - Collection of Fieldset fields</li>
+						<li><a href="classes/fieldset/field.html">Fieldset_Field</a> - Individual Fieldset field object</li>
+					</ul>
+				</li>
+				<li>File - Working with files & directories
+					<ul>
+						<li><a href="classes/file/intro.html">Introduction</a></li>
+						<li><a href="classes/file/usage.html">Usage</a></li>
+						<li><a href="classes/file/advanced.html">Advanced</a></li>
+						<li><a href="classes/file/handlers.html">Handlers</a></li>
+					</ul>
+				</li>
 				<li><a href="classes/finder.html">Finder</a> - Locate and load files</li>
 				<li><a href="classes/form.html">Form</a> - Utility class to generate HTML form elements</li>
 				<li><a href="classes/format.html">Format</a> - Convert data between formats</li>
@@ -192,9 +206,10 @@
 						<li>Usage</li>
 					</ul>
 				</li>
-				<li><a href="classes/num.html">Num</a> - Utility class for dealing with numberss</li>
+				<li><a href="classes/num.html">Num</a> - Utility class for dealing with numbers</li>
 				<li><a href="classes/package.html">Package</a> - Load, unload and list available packages</li>
 				<li><a href="classes/pagination.html">Pagination</a> - Generate the HTML for paginating your tables</li>
+				<li><a href="classes/presenter.html">Presenter</a> - Separating display logic from your views</li>
 				<li><a href="classes/profiler.html">Profiler</a> - Profile your application</li>
 				<li><a href="classes/Redis.html">Redis_Db</a> - Interface to Redis</li>
 				<li>Request - Fire additional requests
@@ -340,7 +355,7 @@
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

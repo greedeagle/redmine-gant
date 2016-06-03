@@ -3,20 +3,17 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
 namespace Fuel\Core;
 
-
-
 class Cache_Storage_Memcached extends \Cache_Storage_Driver
 {
-
 	/**
 	 * @const  string  Tag used for opening & closing cache properties
 	 */
@@ -65,10 +62,15 @@ class Cache_Storage_Memcached extends \Cache_Storage_Driver
 			// add the configured servers
 			static::$memcached->addServers($this->config['servers']);
 
-			// check if we can connect to the server(s)
-			if (static::$memcached->getVersion() === false)
+			// check if we can connect to all the server(s)
+			$added = static::$memcached->getStats();
+			foreach ($this->config['servers'] as $server)
 			{
-				throw new \FuelException('Memcached cache are configured, but there is no connection possible. Check your configuration.');
+				$server = $server['host'].':'.$server['port'];
+				if ( ! isset($added[$server]) or $added[$server]['pid'] == -1)
+				{
+					throw new \FuelException('Memcached cache is configured, but there is no connection possible. Check your configuration.');
+				}
 			}
 		}
 	}
@@ -138,13 +140,13 @@ class Cache_Storage_Memcached extends \Cache_Storage_Driver
 	/**
 	 * Purge all caches
 	 *
-	 * @param   limit purge to subsection
+	 * @param   string  $section  limit purge to subsection
 	 * @return  bool
 	 */
 	public function delete_all($section)
 	{
 		// determine the section index name
-		$section = $this->config['cache_id'].(empty($section)?'':'.'.$section);
+		$section = $this->config['cache_id'].(empty($section) ? '' : '.'.$section);
 
 		// get the directory index
 		$index = static::$memcached->get($this->config['cache_id'].'__DIR__');
@@ -191,7 +193,7 @@ class Cache_Storage_Memcached extends \Cache_Storage_Driver
 			'created'          => $this->created,
 			'expiration'       => $this->expiration,
 			'dependencies'     => $this->dependencies,
-			'content_handler'  => $this->content_handler
+			'content_handler'  => $this->content_handler,
 		);
 		$properties = '{{'.static::PROPS_TAG.'}}'.json_encode($properties).'{{/'.static::PROPS_TAG.'}}';
 
@@ -202,7 +204,7 @@ class Cache_Storage_Memcached extends \Cache_Storage_Driver
 	 * Remove the prepended cache properties and save them in class properties
 	 *
 	 * @param   string
-	 * @throws  UnexpectedValueException
+	 * @throws \UnexpectedValueException
 	 */
 	protected function unprep_contents($payload)
 	{
@@ -230,6 +232,7 @@ class Cache_Storage_Memcached extends \Cache_Storage_Driver
 	 * Save a cache, this does the generic pre-processing
 	 *
 	 * @return  bool  success
+	 * @throws \FuelException
 	 */
 	protected function _set()
 	{
@@ -284,9 +287,10 @@ class Cache_Storage_Memcached extends \Cache_Storage_Driver
 	/**
 	 * validate a driver config value
 	 *
-	 * @param   string  name of the config variable to validate
-	 * @param   mixed   value
+	 * @param   string  $name  name of the config variable to validate
+	 * @param   mixed   $value
 	 * @return  mixed
+	 * @throws \FuelException
 	 */
 	protected function _validate_config($name, $value)
 	{
@@ -345,7 +349,7 @@ class Cache_Storage_Memcached extends \Cache_Storage_Driver
 	/**
 	 * Get's the memcached key belonging to the cache identifier
 	 *
-	 * @param   bool  if true, remove the key retrieved from the index
+	 * @param   bool  $remove  if true, remove the key retrieved from the index
 	 * @return  string
 	 */
 	protected function _get_key($remove = false)

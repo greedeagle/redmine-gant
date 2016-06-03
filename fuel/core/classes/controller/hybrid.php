@@ -3,10 +3,10 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -23,7 +23,6 @@ namespace Fuel\Core;
  */
 abstract class Controller_Hybrid extends \Controller_Rest
 {
-
 	/**
 	* @var string page template
 	*/
@@ -53,8 +52,10 @@ abstract class Controller_Hybrid extends \Controller_Rest
 	 * this router will call action methods for normal requests,
 	 * and REST methods for RESTful calls
 	 *
-	 * @param  string
-	 * @param  array
+	 * @param  string  $resource
+	 * @param  array   $arguments
+	 * @return mixed
+	 * @throws \HttpNotFoundException
 	 */
 	public function router($resource, $arguments)
 	{
@@ -106,6 +107,13 @@ abstract class Controller_Hybrid extends \Controller_Rest
 				}
 			}
 
+			// deal with returned array's in non-restful calls
+			elseif (is_array($response))
+			{
+				$response = \Format::forge()->to_json($response, true);
+			}
+
+			// and make sure we have a valid Response object
 			if ( ! $response instanceof Response)
 			{
 				$response = \Response::forge($response, $this->response_status);

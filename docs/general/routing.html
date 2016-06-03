@@ -17,8 +17,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -52,13 +52,24 @@
 
 			<h3 id="reserved">Reserved Routes</h3>
 
-			<p>In Fuel there are 2 reserved routes.	 They are <kbd>_root_</kbd> and <kbd>_404_</kbd>.</p>
+			<p>In Fuel there are 4 reserved routes.	 They are <kbd>_root_</kbd>, <kbd>_403_</kbd>, <kbd>_404_</kbd> and <kbd>_500_</kbd>.</p>
 
 			<ul>
 				<li><kbd>_root_</kbd> - The default route when no URI is specified.</li>
-				<li><kbd>_404_</kbd> - The route used when no controller or action can be found. Can also be used as a
-					catch-all route.</li>
+				<li><kbd>_403_</kbd> - The route used when the application throws an HttpNoAccessException that isn't caught.</li>
+				<li><kbd>_404_</kbd> - The route used when the application throws an HttpNotFoundException that isn't caught.</li>
+				<li><kbd>_500_</kbd> - The route used when the application throws an HttpServerErrorException that isn't caught.</li>
 			</ul>
+
+			<p class="note">
+				The request class throws an HttpNotFoundException when you request a URI (a route) that your application
+				can't resolve.
+			</p>
+			<p class="note">
+				If no <kbd>_404_</kbd> route is defined, the framework uses it's own error handler to display
+				a "page not found" message. If no <kbd>_403_</kbd> or <kbd>_500_</kbd> route is defined, these
+				exceptions remain uncaught, and are handled like any other exception your application might throw.
+			</p>
 
 			<pre class="php"><code>return array(
     '_root_'  => 'welcome/index',
@@ -86,19 +97,25 @@
 			special statements that allow you match anything or just a segment:</p>
 
 			<ul>
-				<li><kbd>:any</kbd> - This matches anything from that point on in the URI</li>
+				<li><kbd>:any</kbd> - This matches anything from that point on in the URI, does not match "nothing"</li>
+				<li><kbd>:everything</kbd> - Like <kbd>:any</kbd>, but also matches "nothing"</li>
 				<li><kbd>:segment</kbd> - This matches only 1 segment in the URI, but that segment can be anything</li>
 				<li><kbd>:num</kbd> - This matches any numbers</li>
 				<li><kbd>:alpha</kbd> - This matches any alpha characters, including UTF-8</li>
 				<li><kbd>:alnum</kbd> - This matches any alphanumeric characters, including UTF-8</li>
 			</ul>
 
-			<p>Here are some examples:</p>
+			<p>Here are some examples. Notice the subtle differences between <kbd>:any</kbd> and <kbd>:everything</kbd>:</p>
 
 			<pre class="php"><code>return array(
-    'blog/(:any)'      => 'blog/entry/$1', // Routes /blog/entry_name to /blog/entry/entry_name
-    '(:segment)/about' => 'site/about/$1', // Routes /en/about to /site/about/en
-    '(\d{2})/about'    => 'site/about/$1', // Routes /12/about to /site/about/12
+    'blog/(:any)'       => 'blog/entry/$1', // Routes /blog/entry_name to /blog/entry/entry_name
+                                            //   matches /blog/, does not match /blogging and /blog
+    'blog(:any)'        => 'blog/entry$1',  // Routes /blog/entry_name to /blog/entry/entry_name
+                                            //   matches /blog/ and /blogging, does not match /blog
+    'blog(:everything)' => 'blog/entry$1',  // Routes /blog/entry_name to /blog/entry/entry_name
+                                            //   matches /blog/, /blogging and /blog
+    '(:segment)/about'  => 'site/about/$1', // Routes /en/about to /site/about/en
+    '(\d{2})/about'     => 'site/about/$1', // Routes /12/about to /site/about/12
 );</code></pre>
 
 
@@ -157,7 +174,7 @@ return array(
 			<p>The idea of reversed routing is like this: say you got an admin area and you have a route setup for it.
 			In your views, you would like to that admin area using an HTML anchor that links to for example 'admin/start/overview'.
 			Now you decide to move stuff around and end up moving that specific page to 'admin/overview'.
-			As a result of this you now you need to update the links in all your views...</p>
+			As a result of this now you need to update the links in all your views...</p>
 
 			<p>When using reverse routing with these name routes you can link an anchor to a named route, so that when the route changes,
 			the links in your views will automatically follow the change</p>
@@ -208,7 +225,7 @@ echo Html::anchor(Router::get('admin_overview'), 'Overview');</code></pre>
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

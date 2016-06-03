@@ -18,8 +18,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -149,7 +149,7 @@ $query->select(
 	'birthdate'
 );
 
-// SELECT `surname`, `email`, `is_active` as active, `birthdate` FROM `users`
+// SELECT `name`, `surname`, `email`, `is_active` AS `active`, `birthdate` FROM `users`
 </code></pre>
 							</td>
 						</tr>
@@ -210,7 +210,7 @@ $query->select_array(array(
 	'birthdate'
 ));
 
-// produces SELECT `surname`, `email`, `is_active` as active, `birthdate` FROM `users ...
+// produces SELECT `name`, `surname`, `email`, `is_active` AS `active`, `birthdate` FROM `users` ...
 
 // Supply an array to use an alias and reset the previous select
 $query->select_array(array(
@@ -218,7 +218,7 @@ $query->select_array(array(
 	'birthdate'
 ), true);
 
-// produces SELECT `surname` as name, `birthdate` FROM `users ...
+// produces SELECT `surname` AS `name`, `birthdate` FROM `users` ...
 
 </code></pre>
 							</td>
@@ -998,7 +998,7 @@ $query->select('email')->from('admins')->where('role', 'superadmin');
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

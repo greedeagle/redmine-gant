@@ -17,8 +17,8 @@
 		<header id="header">
 			<div class="table">
 				<h1>
-					<strong>FuelPHP, a PHP 5.3 Framework</strong>
-					Documentation
+					<a href="http://fuelphp.com"><img height="37px" width="147px" src="./../../assets/img/fuel.png" /></a>
+					<strong>Documentation</strong>
 				</h1>
 
 				<form id="google_search">
@@ -228,10 +228,16 @@
 				<li><strong>xml</strong> - almost any programming language can read XML</li>
 				<li><strong>json</strong> - useful for JavaScript and increasingly PHP apps.</li>
 				<li><strong>csv</strong> - open with spreadsheet programs</li>
-				<li><strong>html</strong> - a simple HTML table</li>
+				<li><strong>html</strong> - any string returned by your method</li>
 				<li><strong>php</strong> - Representation of PHP code that can be <kbd>eval()</kbd>'ed</li>
 				<li><strong>serialize</strong> - Serialized data that can be unserialized in PHP</li>
 			</ul>
+			<p class="note">
+				If your controller method returns an array, but the requested output format is something that an array can not be
+				converted to (such as <strong>html</strong>), you will get a 406 NOT ACCEPTABLE status returned when your
+				application runs in a production environment, or a warning message and a JSON dump of the array when in
+				any other environment.
+			</p>
 
 			<h3 id="format_determination">Format determination</h3>
 
@@ -242,6 +248,7 @@
 				<li>use the protected property <kbd>$format</kbd> if it contains a supported format</li>
 				<li>use the URL extension if it is a supported format</li>
 				<li>use the format specified by the <kbd>:format</kbd> variable in the route if it contains a supported format</li>
+				<li>use the format specified by the <kbd>format</kbd> variable in the request</li>
 				<li>use the format defined in the <kbd>HTTP_ACCEPT</kbd> header</li>
 				<li>use the default value defined by the <kbd>$rest_format</kbd> property of your class</li>
 				<li>use the <kbd>default_format</kbd> value defined in the global configuration file</li>
@@ -255,7 +262,7 @@
 
 			<p>
 				To disable the <kbd>HTTP_ACCEPT</kbd> as a valid format source, set the configuration key <strong>ignore_http_accept</strong>
-				in the <strong>rest.php</strong> to <code>false</code>.
+				in the <strong>rest.php</strong> to <code>true</code>.
 			</p>
 
 			<p class="note">
@@ -304,7 +311,7 @@
 
 		<footer>
 			<p>
-				&copy; FuelPHP Development Team 2010-2013 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
+				&copy; FuelPHP Development Team 2010-2016 - <a href="http://fuelphp.com">FuelPHP</a> is released under the MIT license.
 			</p>
 		</footer>
 	</div>

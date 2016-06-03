@@ -1,19 +1,17 @@
 <?php
 /**
- * Database connection wrapper. All database object instances are referenced
- * by a name. Queries are typically handled by [Database_Query], rather than
- * using the database object directly.
+ * Part of the Fuel framework.
  *
- * @package    Fuel/Database
- * @category   Base
- * @author     Kohana Team
- * @copyright  (c) 2008-2010 Kohana Team
- * @license    http://kohanaphp.com/license
+ * @package    Fuel
+ * @version    1.8
+ * @author     Fuel Development Team
+ * @license    MIT License
+ * @copyright  2010 - 2016 Fuel Development Team
+ * @copyright  2008 - 2009 Kohana Team
+ * @link       http://fuelphp.com
  */
 
 namespace Fuel\Core;
-
-
 
 abstract class Database_Connection
 {
@@ -55,7 +53,7 @@ abstract class Database_Connection
 			$name = \Config::get('db.active');
 		}
 
-		if ( ! $writable and ($readonly = \Config::get("db.{$name}.readonly", false)))
+		if ( ! $writable and ($readonly = \Config::get('db.'.$name.'.readonly', false)))
 		{
 			! isset(static::$_readonly[$name]) and static::$_readonly[$name] = \Arr::get($readonly, array_rand($readonly));
 			$name = static::$_readonly[$name];
@@ -66,12 +64,12 @@ abstract class Database_Connection
 			if ($config === null)
 			{
 				// Load the configuration for this database
-				$config = \Config::get("db.{$name}");
+				$config = \Config::get('db.'.$name);
 			}
 
 			if ( ! isset($config['type']))
 			{
-				throw new \FuelException('Database type not defined in "{$name}" configuration or "{$name}" configuration does not exist');
+				throw new \FuelException('Database type not defined in "'.$name.'" configuration or "'.$name.'" configuration does not exist');
 			}
 
 			// Set the driver class name
@@ -100,6 +98,19 @@ abstract class Database_Connection
 	protected $_instance;
 
 	/**
+	 *
+	 * @var bool $_in_transation allows transactions
+	 */
+	protected $_in_transaction = false;
+
+	/**
+	 *
+	 * @var int Transaction nesting depth counter.
+	 * Should be modified AFTER a driver has changed the level successfully
+	 */
+	protected $_transaction_depth = 0;
+
+	/**
 	 * @var  resource  Raw server connection
 	 */
 	protected $_connection;
@@ -108,6 +119,11 @@ abstract class Database_Connection
 	 * @var  array  Configuration array
 	 */
 	protected $_config;
+
+	/**
+	 * @var  Database_Schema  Instance of the database schema class
+	 */
+	protected $_schema;
 
 	/**
 	 * Stores the database configuration locally and name the instance.
@@ -124,6 +140,12 @@ abstract class Database_Connection
 
 		// Store the config locally
 		$this->_config = $config;
+
+		// Set up a generic schema processor if needed
+		if ( ! $this->_schema)
+		{
+			$this->_schema = new \Database_Schema($name, $this);
+		}
 
 		// Store the database instance
 		static::$instances[$name] = $this;
@@ -208,6 +230,82 @@ abstract class Database_Connection
 	abstract public function query($type, $sql, $as_object);
 
 	/**
+	 * Create a new [Database_Query_Builder_Select]. Each argument will be
+	 * treated as a column. To generate a `foo AS bar` alias, use an array.
+	 *
+	 *     // SELECT id, username
+	 *     $query = $db->select('id', 'username');
+	 *
+	 *     // SELECT id AS user_id
+	 *     $query = $db->select(array('id', 'user_id'));
+	 *
+	 * @param   mixed   column name or array($column, $alias) or object
+	 * @param   ...
+	 * @return  Database_Query_Builder_Select
+	 */
+	public function select(array $args = null)
+	{
+		return new \Database_Query_Builder_Select($args);
+	}
+
+	/**
+	 * Create a new [Database_Query_Builder_Insert].
+	 *
+	 *     // INSERT INTO users (id, username)
+	 *     $query = $db->insert('users', array('id', 'username'));
+	 *
+	 * @param   string  table to insert into
+	 * @param   array   list of column names or array($column, $alias) or object
+	 * @return  Database_Query_Builder_Insert
+	 */
+	public function insert($table = null, array $columns = null)
+	{
+		return new \Database_Query_Builder_Insert($table, $columns);
+	}
+
+	/**
+	 * Create a new [Database_Query_Builder_Update].
+	 *
+	 *     // UPDATE users
+	 *     $query = $db->update('users');
+	 *
+	 * @param   string  table to update
+	 * @return  Database_Query_Builder_Update
+	 */
+	public function update($table = null)
+	{
+		return new \Database_Query_Builder_Update($table);
+	}
+
+	/**
+	 * Create a new [Database_Query_Builder_Delete].
+	 *
+	 *     // DELETE FROM users
+	 *     $query = $db->delete('users');
+	 *
+	 * @param   string  table to delete from
+	 * @return  Database_Query_Builder_Delete
+	 */
+	public function delete($table = null)
+	{
+		return new \Database_Query_Builder_Delete($table);
+	}
+
+	/**
+	 * Database schema operations
+	 *
+	 *     // CREATE DATABASE database CHARACTER SET utf-8 DEFAULT utf-8
+	 *     $query = $db->schema('create_database', array('database', 'utf-8'));
+
+	 * @param   string  table to delete from
+	 * @return  Database_Query_Builder_Delete
+	 */
+	public function schema($operation, array $params = array())
+	{
+		return call_user_func_array(array($this->_schema, $operation), $params);
+	}
+
+	/**
 	 * Count the number of records in the last query, without LIMIT or OFFSET applied.
 	 *
 	 *     // Get the total number of records that match the last query
@@ -228,7 +326,7 @@ abstract class Database_Connection
 			if (stripos($sql, 'LIMIT') !== false)
 			{
 				// Remove LIMIT from the SQL
-				$sql = preg_replace('/\sLIMIT\s+[^a-z]+/i', ' ', $sql);
+				$sql = preg_replace('/\sLIMIT\s+[^a-z\)]+/i', ' ', $sql);
 			}
 
 			if (stripos($sql, 'OFFSET') !== false)
@@ -237,9 +335,14 @@ abstract class Database_Connection
 				$sql = preg_replace('/\sOFFSET\s+\d+/i', '', $sql);
 			}
 
+			if (stripos($sql, 'ORDER BY') !== false)
+			{
+				// Remove ORDER BY clauses from the SQL to improve count query performance
+				$sql = preg_replace('/ ORDER BY [^,\s)]*(\s|)*(?:ASC|DESC)?(?:\s*(?:ASC|DESC)?,\s*(?:ASC|DESC)?[^,\s)]+\s*(?:ASC|DESC))*/', '', $sql);
+			}
+
 			// Get the total rows from the last query executed
-			$result = $this->query
-			(
+			$result = $this->query(
 				\DB::SELECT,
 				'SELECT COUNT(*) AS '.$this->quote_identifier('total_rows').' '.
 				'FROM ('.$sql.') AS '.$this->quote_table('counted_results'),
@@ -254,9 +357,9 @@ abstract class Database_Connection
 	}
 
 	/**
-	 * Per connection cache controlle setter/getter
+	 * Per connection cache controller setter/getter
 	 *
-	 * @param   bool   $bool  wether to enable it [optional]
+	 * @param   bool   $bool  whether to enable it [optional]
 	 *
 	 * @return  mixed  cache boolean when getting, current instance when setting.
 	 */
@@ -300,8 +403,7 @@ abstract class Database_Connection
 	 */
 	public function datatype($type)
 	{
-		static $types = array
-		(
+		static $types = array(
 			// SQL-92
 			'bit'                           => array('type' => 'string', 'exact' => true),
 			'bit varying'                   => array('type' => 'string'),
@@ -355,7 +457,9 @@ abstract class Database_Connection
 		);
 
 		if (isset($types[$type]))
+		{
 			return $types[$type];
+		}
 
 		return array();
 	}
@@ -580,7 +684,7 @@ abstract class Database_Connection
 		if (is_array($value))
 		{
 			// Separate the column and alias
-			list ($value, $alias) = $value;
+			list($value, $alias) = $value;
 
 			return $value.' AS '.$this->quote_identifier($alias);
 		}
@@ -640,26 +744,21 @@ abstract class Database_Connection
 		elseif (is_array($value))
 		{
 			// Separate the column and alias
-			list ($value, $alias) = $value;
+			list($value, $alias) = $value;
 
 			return $this->quote_identifier($value).' AS '.$this->quote_identifier($alias);
 		}
 
-		if (strpos($value, '"') !== false)
+		if (preg_match('/^(["\']).*\1$/m', $value))
 		{
-			// required for PHP 5.5- (no access to $this in closure)
-			$that = $this;
-			// Quote the column in FUNC("ident") identifiers
-			return preg_replace_callback('/"(.+?)"/', function ($matches) use($that) { return $that->quote_identifier($matches[1]); }, $value);
-		}
-		elseif (preg_match("/^'(.*)?'$/", $value))
-		{
-			// return quoted values as-is
 			return $value;
 		}
-		elseif (strpos($value, '.') !== false)
+
+		if (strpos($value, '.') !== false)
 		{
 			// Split the identifier into the individual parts
+			// This is slightly broken, because a table or column name
+			// (or user-defined alias!) might legitimately contain a period.
 			$parts = explode('.', $value);
 
 			if ($prefix = $this->table_prefix())
@@ -675,10 +774,12 @@ abstract class Database_Connection
 			// Quote each of the parts
 			return implode('.', array_map(array($this, __FUNCTION__), $parts));
 		}
-		else
-		{
-			return $this->_identifier.$value.$this->_identifier;
-		}
+
+		// That you can simply escape the identifier by doubling
+		// it is a built-in assumption which may not be valid for
+		// all connection types!  However, it's true for MySQL,
+		// SQLite, Postgres and other ANSI SQL-compliant DBs.
+		return $this->_identifier.str_replace($this->_identifier, $this->_identifier.$this->_identifier, $value).$this->_identifier;
 	}
 
 	/**
@@ -698,36 +799,181 @@ abstract class Database_Connection
 	 *
 	 *     $db->in_transaction();
 	 *
-	 * @return  bool
+	 * @return bool
 	 */
-	abstract public function in_transaction();
+	public function in_transaction()
+	{
+		return $this->_in_transaction;
+	}
 
 	/**
-	 * Begins a transaction on instance
+	 * Begins a nested transaction on instance
 	 *
 	 *     $db->start_transaction();
 	 *
-	 * @return  bool
+	 * @return bool
 	 */
-	abstract public function start_transaction();
+	public function start_transaction()
+	{
+		$result = true;
+
+		if ($this->_transaction_depth == 0)
+		{
+			if ($this->driver_start_transaction())
+			{
+				$this->_in_transaction = true;
+			}
+			else
+			{
+				$result = false;
+			}
+		}
+		else
+		{
+			$result = $this->set_savepoint($this->_transaction_depth);
+			// If savepoint is not supported it is not an error
+			isset($result) or $result = true;
+		}
+
+		$result and $this->_transaction_depth ++;
+
+		return $result;
+	}
 
 	/**
-	 * Commits all pending transactional queries
+	 * Commits nested transaction
 	 *
 	 *     $db->commit_transaction();
 	 *
-	 * @return  bool
+	 * @return bool
 	 */
-	abstract public function commit_transaction();
+	public function commit_transaction()
+	{
+		// Fake call of the commit
+		if ($this->_transaction_depth <= 0)
+		{
+			return false;
+		}
+
+		if ($this->_transaction_depth - 1)
+		{
+			$result = $this->release_savepoint($this->_transaction_depth - 1);
+			// If savepoint is not supported it is not an error
+			! isset($result) and $result = true;
+		}
+		else
+		{
+			$this->_in_transaction = false;
+			$result = $this->driver_commit();
+		}
+
+		$result and $this->_transaction_depth --;
+
+		return $result;
+	}
 
 	/**
-	 * Rollsback all pending transactional queries
+	 * Rollsback nested pending transaction queries.
+	 * Rollback to the current level uses SAVEPOINT,
+	 * it does not work if current RDBMS does not support them.
+	 * In this case system rollbacks all queries and closes the transaction
 	 *
 	 *     $db->rollback_transaction();
 	 *
-	 * @return  bool
+	 * @param bool $rollback_all:
+	 *  true  - rollback everything and close transaction;
+	 *  false - rollback only current level
+	 *
+	 * @return bool
 	 */
-	abstract public function rollback_transaction();
+	public function rollback_transaction($rollback_all = true)
+	{
+		if ($this->_transaction_depth > 0)
+		{
+			if($rollback_all or $this->_transaction_depth == 1)
+			{
+				if($result = $this->driver_rollback())
+				{
+					$this->_transaction_depth = 0;
+					$this->_in_transaction = false;
+				}
+			}
+			else
+			{
+				$result = $this->rollback_savepoint($this->_transaction_depth - 1);
+				// If savepoint is not supported it is not an error
+				isset($result) or $result = true;
+
+				$result and $this->_transaction_depth -- ;
+			}
+		}
+		else
+		{
+			$result = false;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Begins a transaction on the driver level
+	 *
+	 * @return bool
+	 */
+	abstract protected function driver_start_transaction();
+
+	/**
+	 * Commits all pending transactional queries on the driver level
+	 *
+	 * @return bool
+	*/
+	abstract protected function driver_commit();
+
+	/**
+	 * Rollback all pending transactional queries on the driver level
+	 *
+	 * @return bool
+	*/
+	abstract protected function driver_rollback();
+
+	/**
+	 * Sets savepoint of the transaction
+	 *
+	 * @param string $name name of the savepoint
+	 * @return boolean true  - savepoint was set successfully;
+	 *                 false - failed to set savepoint;
+	 *                 null  - RDBMS does not support savepoints
+	 */
+	protected function set_savepoint($name)
+	{
+		return null;
+	}
+
+	/**
+	 * Release savepoint of the transaction
+	 *
+	 * @param string $name name of the savepoint
+	 * @return boolean true  - savepoint was set successfully;
+	 *                 false - failed to set savepoint;
+	 *                 null  - RDBMS does not support savepoints
+	 */
+	protected function release_savepoint($name)
+	{
+		return null;
+	}
+
+	/**
+	 * Rollback savepoint of the transaction
+	 *
+	 * @param string $name name of the savepoint
+	 * @return boolean true  - savepoint was set successfully;
+	 *                 false - failed to set savepoint;
+	 *                 null  - RDBMS does not support savepoints
+	 */
+	protected function rollback_savepoint($name)
+	{
+		return null;
+	}
 
 	/**
 	 * Returns the raw connection object for custom method access

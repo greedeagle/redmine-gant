@@ -5,10 +5,10 @@
  * Fuel is a fast, lightweight, community driven PHP5 framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -26,7 +26,6 @@ class EmailValidationFailedException extends \FuelException {}
 
 class Email
 {
-
 	/**
 	 * Instance for singleton usage.
 	 */
@@ -40,11 +39,11 @@ class Email
 	/**
 	 * Email priorities
 	 */
-	const P_LOWEST		= '5 (Lowest)';
-	const P_LOW			= '4 (Low)';
-	const P_NORMAL		= '3 (Normal)';
-	const P_HIGH		= '2 (High)';
-	const P_HIGHEST		= '1 (Highest)';
+	const P_LOWEST  = '5 (Lowest)';
+	const P_LOW     = '4 (Low)';
+	const P_NORMAL  = '3 (Normal)';
+	const P_HIGH    = '2 (High)';
+	const P_HIGHEST = '1 (Highest)';
 
 	/**
 	 * Email driver forge.

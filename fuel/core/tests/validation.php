@@ -3,10 +3,10 @@
  * Part of the Fuel framework.
  *
  * @package    Fuel
- * @version    1.7
+ * @version    1.8
  * @author     Fuel Development Team
  * @license    MIT License
- * @copyright  2010 - 2013 Fuel Development Team
+ * @copyright  2010 - 2016 Fuel Development Team
  * @link       http://fuelphp.com
  */
 
@@ -40,8 +40,9 @@ class Test_Validation extends TestCase
 					'dns' => '127.0.0.1',
 					'snd' => '127.0.0',
 					'url' => 'http://www.google.com',
-				)
-			)
+					'gender' => 'M',
+				),
+			),
 		);
 	}
 
@@ -149,6 +150,76 @@ class Test_Validation extends TestCase
 
 		$this->assertEquals($expected, $output);
 	}
+
+    /**
+     * Validation:  match_collection
+     * Expecting:   success
+     *
+     * @dataProvider    form_provider
+     */
+    public function test_validation_match_collection_success($input)
+    {
+        $val = Validation::forge(__FUNCTION__);
+        $val->add_field('gender', 'Gender', 'match_collection[M,F]');
+
+        $output = $val->run($input);
+        $expected = true;
+
+        $this->assertEquals($expected, $output);
+    }
+
+    /**
+     * Validation:  match_collection
+     * Expecting:   failure
+     *
+     * @dataProvider    form_provider
+     */
+    public function test_validation_match_collection_failure($input)
+    {
+        $val = Validation::forge(__FUNCTION__);
+        $val->add_field('gender', 'Gender', 'match_collection["M,F"]');
+        $val->run($input);
+
+        $output = $val->error('gender', false) ? true : false;
+        $expected = true;
+
+        $this->assertEquals($expected, $output);
+    }
+
+    /**
+     * Validation:  match_collection (strict)
+     * Expecting:   success
+     *
+     * @dataProvider    form_provider
+     */
+    public function test_validation_match_collection_strict_success($input)
+    {
+        $val = Validation::forge(__FUNCTION__);
+        $val->add_field('gender', 'Gender', '')->add_rule('match_collection', array('M', 'F'), true);
+
+        $output = $val->run($input);
+        $expected = true;
+
+        $this->assertEquals($expected, $output);
+    }
+
+    /**
+     * Validation:  match_collection (strict)
+     * Expecting:   failure
+     *
+     * @dataProvider    form_provider
+     */
+    public function test_validation_match_collection_strict_failure($input)
+    {
+        $val = Validation::forge(__FUNCTION__);
+        $val->add_field('gender', 'Gender', '')->add_rule('match_collection', array('m', 'f'), true);
+        $val->run($input);
+
+        $output = $val->error('gender', false) ? true : false;
+        $expected = true;
+
+        $this->assertEquals($expected, $output);
+    }
 
 	/**
 	 * Validation:  match_pattern
